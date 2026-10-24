@@ -1,0 +1,6 @@
+out/
+*.class
+.tools/
+target/
+data/
+/HANDOFF.local.md
