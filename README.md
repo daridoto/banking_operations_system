@@ -1,5 +1,7 @@
 # Sistema de operaciones e incidencias bancarias
 
+Configuración de integración continua: [Jenkins local](docs/jenkins.md).
+
 Proyecto de aprendizaje con Java 17, Spring Boot y SQL. Permite consultar cuentas,
 transferir dinero, consultar el historial y detectar operaciones para revisión.
 
