@@ -4,6 +4,7 @@
     <children xsi:type="basic:PartSashContainer" xmi:id="_6wlLksgZEeSyMNYR5xypkQ" elementId="banco.desktop.partsashcontainer.sample">
       <children xsi:type="basic:PartStack" xmi:id="_6wlLk8gZEeSyMNYR5xypkQ" elementId="banco.desktop.partstack.sample">
         <children xsi:type="basic:Part" xmi:id="_6wlLlMgZEeSyMNYR5xypkQ" elementId="banco.desktop.part.sample" contributionURI="bundleclass://banco.desktop/banco.desktop.parts.SamplePart" label="Cuentas" iconURI="platform:/plugin/banco.desktop/icons/home.svg"/>
+        <children xsi:type="basic:Part" xmi:id="_bancoIncidenciasPart" elementId="banco.desktop.part.incidencias" contributionURI="bundleclass://banco.desktop/banco.desktop.parts.IncidenciasPart" label="Incidencias"/>
       </children>
     </children>
     <mainMenu xmi:id="_6wlLicgZEeSyMNYR5xypkQ" elementId="org.eclipse.ui.main.menu">
