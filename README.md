@@ -12,8 +12,7 @@ simular el trabajo de back office de un banco: transferencias entre cuentas,
 detección automática de operaciones sospechosas y gestión de las incidencias que
 generan, con historial de cada cambio. Integración continua con **Jenkins**.
 
-> 📸 **Captura pendiente:** vista general del cliente RCP (pestaña Incidencias).
-<!-- ![Cliente RCP: gestión de incidencias](docs/img/rcp-incidencias.png) -->
+![Cliente RCP: incidencia pendiente generada por una transferencia de 70 EUR](docs/img/rcp-incidencias.png)
 
 ## Qué hace
 
@@ -56,14 +55,19 @@ o se revierte junto.
 
 ## Capturas
 
-> 📸 **Captura pendiente:** pestaña Cuentas con el formulario de transferencia.
-<!-- ![Cuentas y transferencias](docs/img/rcp-cuentas.png) -->
+**1. El empleado consulta los saldos y registra una transferencia de 70 EUR.**
 
-> 📸 **Captura pendiente:** resolución de una incidencia con comentario e historial.
-<!-- ![Resolución de incidencia](docs/img/rcp-resolucion.png) -->
+![Cuentas y formulario de transferencia](docs/img/rcp-cuentas.png)
 
-> 📸 **Captura pendiente:** ejecución de Jenkins con los resultados de las pruebas.
-<!-- ![Pipeline de Jenkins](docs/img/jenkins-pipeline.png) -->
+**2. Al superar el umbral, se crea una incidencia; el empleado la revisa y la resuelve con un comentario.** El historial guarda cada cambio con su fecha.
+
+![Incidencia resuelta con historial de cambios](docs/img/rcp-resolucion.png)
+
+**3. Jenkins ejecuta las 51 pruebas en cada cambio y guarda el JAR solo si todo pasa.**
+
+![Resultados de las pruebas en Jenkins](docs/img/jenkins-tests.png)
+
+![Ejecución de Jenkins con el JAR generado](docs/img/jenkins-ejecucion.png)
 
 ## Arrancar
 

@@ -4,3 +4,4 @@ out/
 target/
 data/
 /HANDOFF.local.md
+.DS_Store
