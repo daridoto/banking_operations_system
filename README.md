@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo-countercheck-oscuro.svg">
+    <img src="docs/img/logo-countercheck.svg" alt="Countercheck" width="200">
+  </picture>
+</p>
+
 # Countercheck — Sistema de operaciones bancarias
 
 Backend en **Java 17 + Spring Boot** y cliente de escritorio en **Eclipse RCP** para
