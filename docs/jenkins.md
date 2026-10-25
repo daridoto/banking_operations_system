@@ -36,7 +36,7 @@ En Jenkins:
 
 1. Pulsa **New Item**, nombre `banking-operations-system`, tipo **Pipeline**.
 2. En **Pipeline**, elige **Pipeline script from SCM** y SCM **Git**.
-3. URL: `https://github.com/daridoto/bancking_operations_system.git`.
+3. URL: `https://github.com/daridoto/banking_operations_system.git`.
 4. Rama: `*/main`. Script Path: `Jenkinsfile`.
 5. Si el repositorio es público, no hacen falta credenciales para leerlo. Si es
    privado, configúralas en el almacén de credenciales de Jenkins, no en el código.
