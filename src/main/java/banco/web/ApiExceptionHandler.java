@@ -1,4 +1,7 @@
-package banco;
+package banco.web;
+
+import banco.service.EstadoIncidenciaException;
+import banco.dto.SolicitudResolucion;
 
 import java.util.Map;
 import java.util.NoSuchElementException;

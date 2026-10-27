@@ -1,4 +1,7 @@
-package banco;
+package banco.repository;
+
+import banco.model.Incidencia;
+import banco.model.CambioIncidencia;
 
 import java.time.OffsetDateTime;
 import java.util.List;

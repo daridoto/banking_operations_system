@@ -1,4 +1,7 @@
-package banco;
+package banco.repository;
+
+import banco.model.Cuenta;
+import banco.model.Transferencia;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;

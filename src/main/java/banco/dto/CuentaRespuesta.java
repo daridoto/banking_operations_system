@@ -1,4 +1,6 @@
-package banco;
+package banco.dto;
+
+import banco.model.Cuenta;
 
 import java.math.BigDecimal;
 

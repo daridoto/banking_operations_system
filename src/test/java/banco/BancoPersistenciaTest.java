@@ -1,5 +1,8 @@
 package banco;
 
+import banco.service.BancoService;
+import banco.dto.SolicitudTransferencia;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;

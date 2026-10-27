@@ -36,3 +36,11 @@ CREATE TABLE IF NOT EXISTS cambios_incidencia (
 
 -- También amplía bases existentes sin borrar sus datos.
 ALTER TABLE cambios_incidencia ADD COLUMN IF NOT EXISTS comentario VARCHAR(1000);
+
+-- Usuarios que pueden iniciar sesión (credenciales y rol), no fichas de personal.
+CREATE TABLE IF NOT EXISTS usuarios (
+    username VARCHAR(50) PRIMARY KEY,
+    password_hash VARCHAR(100) NOT NULL,
+    rol VARCHAR(20) NOT NULL CHECK (rol IN ('EMPLEADO', 'SUPERVISOR')),
+    activo BOOLEAN NOT NULL DEFAULT TRUE
+);

@@ -92,8 +92,14 @@ public class BancoApi implements AutoCloseable {
     }
 
     private HttpRequest.Builder solicitud(String ruta) {
-        return HttpRequest.newBuilder(base.resolve(ruta)).timeout(Duration.ofSeconds(10))
+        HttpRequest.Builder builder = HttpRequest.newBuilder(base.resolve(ruta))
+                .timeout(Duration.ofSeconds(10))
                 .header("Accept", "application/json");
+        // Todas las peticiones pasan por aquí: añadimos las credenciales en un solo sitio.
+        if (Sesion.hayCredenciales()) {
+            builder.header("Authorization", Sesion.cabeceraBasic());
+        }
+        return builder;
     }
 
     private CompletableFuture<JsonElement> enviarJson(HttpRequest solicitud) {

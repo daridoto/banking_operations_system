@@ -1,4 +1,12 @@
-package banco;
+package banco.web;
+
+import banco.service.BancoService;
+import banco.dto.CuentaRespuesta;
+import banco.dto.SolicitudTransferencia;
+import banco.dto.SolicitudResolucion;
+import banco.model.Transferencia;
+import banco.model.Incidencia;
+import banco.model.CambioIncidencia;
 
 import java.util.List;
 import jakarta.validation.Valid;

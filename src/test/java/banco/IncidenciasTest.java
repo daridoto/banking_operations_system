@@ -1,5 +1,9 @@
 package banco;
 
+import banco.service.BancoService;
+import banco.dto.SolicitudTransferencia;
+import banco.model.Incidencia;
+
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -10,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -21,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = "banco.deteccion.umbral-eur=50.00")
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
+@WithMockUser
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class IncidenciasTest {
     @Autowired private BancoService banco;
@@ -200,6 +206,7 @@ class IncidenciasTest {
     }
 
     @Test
+    @WithMockUser(roles = "SUPERVISOR")
     void resuelveConComentarioYConservaHistorial() throws Exception {
         long id = crearIncidencia();
         banco.iniciarRevision(id);
@@ -223,6 +230,7 @@ class IncidenciasTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"{}", "{\"comentario\":null}", "{\"comentario\":\"\"}", "{\"comentario\":\"   \"}"})
+    @WithMockUser(roles = "SUPERVISOR")
     void rechazaResolucionSinComentario(String cuerpo) throws Exception {
         long id = crearIncidencia();
         banco.iniciarRevision(id);
@@ -235,6 +243,7 @@ class IncidenciasTest {
     }
 
     @Test
+    @WithMockUser(roles = "SUPERVISOR")
     void limitaLongitudDelComentario() throws Exception {
         long id = crearIncidencia();
         banco.iniciarRevision(id);
@@ -247,6 +256,19 @@ class IncidenciasTest {
     }
 
     @Test
+    @WithMockUser(roles = "EMPLEADO")
+    void empleadoNoPuedeResolver() throws Exception {
+        long id = crearIncidencia();
+        banco.iniciarRevision(id);
+        api.perform(post("/api/incidencias/{id}/resolucion", id)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"comentario\":\"Operación justificada.\"}"))
+                .andExpect(status().isForbidden());
+        assertEquals("EN_REVISION", banco.consultarIncidencia(id).estado());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM cambios_incidencia", Integer.class));
+    }
+
+    @Test
+    @WithMockUser(roles = "SUPERVISOR")
     void noResuelvePendienteNiInexistente() throws Exception {
         long id = crearIncidencia();
         api.perform(post("/api/incidencias/{id}/resolucion", id)

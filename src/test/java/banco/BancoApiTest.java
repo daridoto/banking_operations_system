@@ -8,6 +8,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -17,9 +18,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 // Integra Spring, JSON, validación, controlador y servicios, sin abrir un puerto.
+// @WithMockUser ejecuta cada petición como un usuario autenticado de prueba.
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockUser
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class BancoApiTest {
     @Autowired

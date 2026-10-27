@@ -1,4 +1,6 @@
-package banco;
+package banco.repository;
+
+import banco.model.Cuenta;
 
 import java.util.List;
 import java.util.NoSuchElementException;

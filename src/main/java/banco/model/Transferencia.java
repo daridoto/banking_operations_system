@@ -1,4 +1,4 @@
-package banco;
+package banco.model;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;

@@ -1,4 +1,4 @@
-package banco;
+package banco.dto;
 
 import java.math.BigDecimal;
 import jakarta.validation.constraints.DecimalMin;

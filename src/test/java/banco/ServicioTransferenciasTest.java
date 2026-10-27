@@ -1,5 +1,8 @@
 package banco;
 
+import banco.service.ServicioTransferencias;
+import banco.model.Cuenta;
+
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

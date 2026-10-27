@@ -16,6 +16,10 @@
                name="appName"
                value="banco.desktop">
          </property>
+         <property
+               name="lifeCycleURI"
+               value="bundleclass://banco.desktop/banco.desktop.LifeCycle">
+         </property>
       </product>
    </extension>
 
