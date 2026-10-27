@@ -28,8 +28,9 @@ public class LifeCycle {
 
             Sesion.iniciar(dialogo.usuario(), dialogo.password());
             try (BancoApi api = new BancoApi()) {
-                // Una petición real valida las credenciales: 200 vale, 401 no.
-                api.listarCuentas().get(10, TimeUnit.SECONDS);
+                // /api/me valida las credenciales (200/401) y devuelve el rol.
+                String rol = api.consultarRol().get(10, TimeUnit.SECONDS);
+                Sesion.rol(rol);
                 break;
             } catch (Exception e) {
                 Sesion.cerrar();

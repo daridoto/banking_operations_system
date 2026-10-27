@@ -4,6 +4,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.CompletionException;
 import banco.desktop.api.BancoApi;
 import banco.desktop.api.IncidenciaVista;
+import banco.desktop.api.Sesion;
 import jakarta.annotation.PostConstruct;
 import org.eclipse.e4.ui.di.Focus;
 import org.eclipse.jface.dialogs.InputDialog;
@@ -41,6 +42,14 @@ public class IncidenciasPart {
         revisar.setText("Iniciar revisión");
         resolver = new Button(acciones, SWT.PUSH);
         resolver.setText("Resolver…");
+        // Solo el supervisor resuelve; para los demás el botón ni se muestra.
+        // La seguridad real está en el backend (403); esto solo adapta la vista.
+        if (!"SUPERVISOR".equals(Sesion.rol())) {
+            GridData oculto = new GridData();
+            oculto.exclude = true;
+            resolver.setLayoutData(oculto);
+            resolver.setVisible(false);
+        }
         habilitarAcciones();
         estado = new Label(parent, SWT.WRAP);
         estado.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));

@@ -32,6 +32,12 @@ public class BancoApi implements AutoCloseable {
         return enviar(solicitud("api/cuentas").GET().build());
     }
 
+    // Valida las credenciales y, de paso, devuelve el rol del usuario autenticado.
+    public CompletableFuture<String> consultarRol() {
+        return enviarJson(solicitud("api/me").GET().build())
+                .thenApply(json -> json.getAsJsonObject().get("rol").getAsString());
+    }
+
     public CompletableFuture<List<CuentaVista>> transferir(long origen, long destino, BigDecimal importe) {
         JsonObject json = new JsonObject();
         json.addProperty("cuentaOrigenId", origen);
