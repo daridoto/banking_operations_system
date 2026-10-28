@@ -5,16 +5,24 @@ import java.util.List;
 import java.util.concurrent.CompletionException;
 import banco.desktop.api.BancoApi;
 import banco.desktop.api.CuentaVista;
+import banco.desktop.api.ResumenVista;
 import jakarta.annotation.PostConstruct;
 import org.eclipse.e4.ui.di.Focus;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
 
-public class SamplePart {
+// Pestaña Cuentas: indicadores del día arriba, tabla de cuentas a la izquierda y
+// formulario de transferencia a la derecha.
+public class CuentasPart {
     private final BancoApi api = new BancoApi();
     private List<CuentaVista> cuentas = List.of();
+    private Indicador transferenciasHoy;
+    private Indicador importeHoy;
+    private Indicador pendientes;
+    private Indicador bloqueadas;
     private Table tabla;
     private Button actualizar;
     private Button transferir;
@@ -27,36 +35,69 @@ public class SamplePart {
     @PostConstruct
     public void createComposite(Composite parent) {
         parent.setLayout(new GridLayout(1, false));
-        actualizar = new Button(parent, SWT.PUSH);
-        actualizar.setText("Actualizar cuentas");
+        crearIndicadores(parent);
         estado = new Label(parent, SWT.WRAP);
         estado.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        estado.setText("Pulsa Actualizar cuentas para consultar el banco.");
-        tabla = new Table(parent, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
-        tabla.setHeaderVisible(true);
-        tabla.setLinesVisible(true);
-        tabla.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-        String[] titulos = {"IBAN", "Titular", "Saldo", "Moneda"};
-        int[] anchos = {260, 220, 130, 90};
-        for (int i = 0; i < titulos.length; i++) {
-            TableColumn columna = new TableColumn(tabla, SWT.NONE);
-            columna.setText(titulos[i]);
-            columna.setWidth(anchos[i]);
-        }
-        crearFormulario(parent);
+
+        SashForm paneles = new SashForm(parent, SWT.HORIZONTAL);
+        paneles.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+        crearTabla(paneles);
+        crearFormulario(paneles);
+        paneles.setWeights(65, 35);
+
         Display display = parent.getDisplay();
-        actualizar.addListener(SWT.Selection, evento -> cargarCuentas(display));
+        actualizar.addListener(SWT.Selection, evento -> cargar(display));
         transferir.addListener(SWT.Selection, evento -> enviarTransferencia(display));
         parent.addDisposeListener(evento -> api.close());
         ocupado(false);
+        cargar(display);
     }
 
-    // Esta parte solo construye los controles visuales.
-    private void crearFormulario(Composite parent) {
-        Group formulario = new Group(parent, SWT.NONE);
+    // Cuatro tarjetas que ocupan el ancho y el botón de actualizar a la derecha.
+    private void crearIndicadores(Composite padre) {
+        Composite fila = new Composite(padre, SWT.NONE);
+        GridLayout layout = new GridLayout(5, false);
+        layout.horizontalSpacing = 10;
+        fila.setLayout(layout);
+        fila.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        transferenciasHoy = indicador(fila, "Transferencias hoy");
+        importeHoy = indicador(fila, "Importe movido hoy");
+        pendientes = indicador(fila, "Incidencias pendientes");
+        bloqueadas = indicador(fila, "Cuentas bloqueadas");
+        actualizar = new Button(fila, SWT.PUSH);
+        actualizar.setText("⟳  Actualizar");
+        actualizar.setLayoutData(new GridData(SWT.RIGHT, SWT.TOP, false, false));
+    }
+
+    private static Indicador indicador(Composite padre, String titulo) {
+        Indicador tarjeta = new Indicador(padre, titulo);
+        tarjeta.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        return tarjeta;
+    }
+
+    private void crearTabla(Composite padre) {
+        Group grupo = new Group(padre, SWT.NONE);
+        grupo.setText("Cuentas");
+        grupo.setLayout(new GridLayout(1, false));
+        tabla = new Table(grupo, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
+        tabla.setHeaderVisible(true);
+        tabla.setLinesVisible(true);
+        tabla.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+        // Los importes se alinean a la derecha para comparar cifras de un vistazo.
+        String[] titulos = {"IBAN", "Titular", "Saldo", "Estado"};
+        int[] anchos = {250, 200, 130, 110};
+        int[] alineacion = {SWT.LEFT, SWT.LEFT, SWT.RIGHT, SWT.LEFT};
+        for (int i = 0; i < titulos.length; i++) {
+            TableColumn columna = new TableColumn(tabla, alineacion[i]);
+            columna.setText(titulos[i]);
+            columna.setWidth(anchos[i]);
+        }
+    }
+
+    private void crearFormulario(Composite padre) {
+        Group formulario = new Group(padre, SWT.NONE);
         formulario.setText("Nueva transferencia");
         formulario.setLayout(new GridLayout(2, false));
-        formulario.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         new Label(formulario, SWT.NONE).setText("Cuenta de origen");
         origen = new Combo(formulario, SWT.READ_ONLY);
         origen.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
@@ -65,9 +106,9 @@ public class SamplePart {
         new Label(formulario, SWT.NONE).setText("IBAN de destino");
         destino = new Combo(formulario, SWT.DROP_DOWN);
         destino.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        new Label(formulario, SWT.NONE).setText("Importe");
-        importe = new Text(formulario, SWT.BORDER);
-        importe.setMessage("Ejemplo: 20,00");
+        new Label(formulario, SWT.NONE).setText("Importe (€)");
+        importe = new Text(formulario, SWT.BORDER | SWT.RIGHT);
+        importe.setMessage("20,00");
         importe.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         new Label(formulario, SWT.NONE).setText("Concepto");
         concepto = new Text(formulario, SWT.BORDER);
@@ -76,12 +117,16 @@ public class SamplePart {
         concepto.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         transferir = new Button(formulario, SWT.PUSH);
         transferir.setText("Transferir");
-        transferir.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, false, 2, 1));
+        GridData boton = new GridData(SWT.RIGHT, SWT.CENTER, true, false, 2, 1);
+        boton.verticalIndent = 8;
+        transferir.setLayoutData(boton);
     }
 
-    private void cargarCuentas(Display display) {
+    // Cuentas e indicadores se piden a la vez; cada respuesta pinta su parte.
+    private void cargar(Display display) {
         ocupado(true);
         mensaje("Consultando cuentas…");
+        actualizarResumen(display);
         api.listarCuentas().whenComplete((resultado, error) -> enPantalla(display, () -> {
             if (error == null) {
                 cuentas = resultado;
@@ -91,12 +136,29 @@ public class SamplePart {
                         .map(c -> c.ibanFormateado() + " (" + c.titular() + ")").toArray(String[]::new));
                 if (!cuentas.isEmpty()) origen.select(0);
                 if (cuentas.size() > 1) destino.select(1);
-                mensaje(cuentas.isEmpty() ? "No hay cuentas." : "Cuentas actualizadas.");
+                mensaje(cuentas.isEmpty() ? "No hay cuentas." : "");
             } else {
                 mensaje("No se pudieron actualizar las cuentas. Comprueba que el backend está arrancado.");
             }
             ocupado(false);
         }));
+    }
+
+    private void actualizarResumen(Display display) {
+        api.consultarResumen().whenComplete((r, error) -> enPantalla(display, () -> {
+            if (error != null) return; // Los indicadores se quedan como estaban.
+            pintarResumen(r);
+        }));
+    }
+
+    // Los indicadores de "atención" se ponen en color solo cuando hay algo que mirar.
+    private void pintarResumen(ResumenVista r) {
+        transferenciasHoy.setValor(Long.toString(r.transferenciasHoy()), null);
+        importeHoy.setValor(Estilo.dinero(r.importeHoyEur(), "EUR"), null);
+        pendientes.setValor(Long.toString(r.incidenciasPendientes()),
+                r.incidenciasPendientes() > 0 ? Estilo.NARANJA : null);
+        bloqueadas.setValor(Long.toString(r.cuentasBloqueadas()),
+                r.cuentasBloqueadas() > 0 ? Estilo.ROJO : null);
     }
 
     // El clic recoge los valores y llama a la API; las reglas bancarias siguen en el backend.
@@ -125,7 +187,8 @@ public class SamplePart {
         }
         ocupado(true); // Evita otro envío mientras esperamos la respuesta.
         mensaje("Enviando transferencia…");
-        api.transferir(ibanOrigen, ibanDestino, cantidad, concepto.getText().strip()).whenComplete((resultado, error) -> enPantalla(display, () -> {
+        api.transferir(ibanOrigen, ibanDestino, cantidad, concepto.getText().strip())
+                .whenComplete((resultado, error) -> enPantalla(display, () -> {
             if (error == null) {
                 // POST devuelve las dos cuentas modificadas; conservamos las demás.
                 cuentas = cuentas.stream().map(c -> resultado.stream()
@@ -133,7 +196,8 @@ public class SamplePart {
                 mostrarCuentas();
                 importe.setText("");
                 concepto.setText("");
-                mensaje("Transferencia realizada. Saldos actualizados.");
+                mensaje("✔ Transferencia realizada. Saldos actualizados.");
+                actualizarResumen(display);
             } else {
                 Throwable causa = error;
                 while (causa instanceof CompletionException && causa.getCause() != null) causa = causa.getCause();
@@ -150,8 +214,10 @@ public class SamplePart {
     private void mostrarCuentas() {
         tabla.removeAll();
         for (CuentaVista c : cuentas) {
-            new TableItem(tabla, SWT.NONE).setText(new String[] {
-                    c.ibanFormateado(), c.titular(), c.saldo().toPlainString(), c.moneda()});
+            TableItem fila = new TableItem(tabla, SWT.NONE);
+            fila.setText(new String[] {c.ibanFormateado(), c.titular(), Estilo.dinero(c.saldo(), c.moneda()),
+                    "● " + c.estado()});
+            fila.setForeground(3, Estilo.colorEstadoCuenta(c.estado()));
         }
     }
 

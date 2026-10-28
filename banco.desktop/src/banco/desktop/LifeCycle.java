@@ -30,9 +30,10 @@ public class LifeCycle {
                 // /api/login valida la contraseña (200/401) y devuelve el token.
                 String token = api.login(dialogo.usuario(), dialogo.password()).get(10, TimeUnit.SECONDS);
                 Sesion.iniciar(dialogo.usuario(), token);
-                // Con el token ya guardado, /api/me devuelve el rol.
-                String rol = api.consultarRol().get(10, TimeUnit.SECONDS);
-                Sesion.rol(rol);
+                // Con el token ya guardado, /api/me devuelve el nombre y el rol.
+                var yo = api.consultarYo().get(10, TimeUnit.SECONDS);
+                Sesion.rol(yo.get("rol").getAsString());
+                Sesion.nombre(yo.get("nombre").getAsString());
                 break;
             } catch (Exception e) {
                 Sesion.cerrar();

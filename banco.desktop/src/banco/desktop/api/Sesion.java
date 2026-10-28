@@ -7,6 +7,7 @@ public final class Sesion {
     private static String usuario;
     private static String token;
     private static String rol;
+    private static String nombre;
 
     private Sesion() {
     }
@@ -20,6 +21,7 @@ public final class Sesion {
         usuario = null;
         token = null;
         rol = null;
+        nombre = null;
     }
 
     public static boolean hayToken() {
@@ -36,6 +38,15 @@ public final class Sesion {
 
     public static String rol() {
         return rol;
+    }
+
+    // Nombre completo del empleado, para mostrarlo en la cabecera.
+    public static void nombre(String nombre) {
+        Sesion.nombre = nombre;
+    }
+
+    public static String nombre() {
+        return nombre;
     }
 
     // Cabecera Authorization para JWT: el token se envía tal cual, sin codificar.

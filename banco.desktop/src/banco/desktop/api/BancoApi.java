@@ -31,6 +31,15 @@ public class BancoApi implements AutoCloseable {
         this.base = base;
     }
 
+    // Indicadores de la pestaña Cuentas: actividad de hoy y lo que requiere atención.
+    public CompletableFuture<ResumenVista> consultarResumen() {
+        return enviarJson(solicitud("api/resumen").GET().build()).thenApply(json -> {
+            var r = json.getAsJsonObject();
+            return new ResumenVista(r.get("transferenciasHoy").getAsLong(), r.get("importeHoyEur").getAsBigDecimal(),
+                    r.get("incidenciasPendientes").getAsLong(), r.get("cuentasBloqueadas").getAsLong());
+        });
+    }
+
     public CompletableFuture<List<CuentaVista>> listarCuentas() {
         return enviar(solicitud("api/cuentas").GET().build());
     }
@@ -47,10 +56,9 @@ public class BancoApi implements AutoCloseable {
                 .thenApply(respuesta -> respuesta.getAsJsonObject().get("token").getAsString());
     }
 
-    // Devuelve el rol del usuario al que pertenece el token.
-    public CompletableFuture<String> consultarRol() {
-        return enviarJson(solicitud("api/me").GET().build())
-                .thenApply(json -> json.getAsJsonObject().get("rol").getAsString());
+    // "Quién soy": nombre completo y rol del usuario al que pertenece el token.
+    public CompletableFuture<JsonObject> consultarYo() {
+        return enviarJson(solicitud("api/me").GET().build()).thenApply(JsonElement::getAsJsonObject);
     }
 
     // El backend valida los IBAN (formato y dígito de control) y responde 400 si fallan.
@@ -159,7 +167,8 @@ public class BancoApi implements AutoCloseable {
                         c.get("incidenciaId").getAsLong(), c.get("estadoAnterior").getAsString(),
                         c.get("estadoNuevo").getAsString(), OffsetDateTime.parse(c.get("fecha").getAsString()),
                         comentario == null || comentario.isJsonNull() ? null : comentario.getAsString(),
-                        usuario == null || usuario.isJsonNull() ? null : usuario.getAsString()));
+                        usuario == null || usuario.isJsonNull() ? null : usuario.getAsString(),
+                        textoOpcional(c, "nombreUsuario")));
             }
             return List.copyOf(cambios);
         });
@@ -170,7 +179,10 @@ public class BancoApi implements AutoCloseable {
         return new IncidenciaVista(i.get("id").getAsLong(), i.get("transferenciaId").getAsLong(),
                 i.get("regla").getAsString(), i.get("motivo").getAsString(),
                 i.get("prioridad").getAsString(), i.get("estado").getAsString(),
-                OffsetDateTime.parse(i.get("fecha").getAsString()));
+                OffsetDateTime.parse(i.get("fecha").getAsString()),
+                i.get("importe").getAsBigDecimal(), i.get("moneda").getAsString(),
+                i.get("ordenante").getAsString(), i.get("beneficiario").getAsString(),
+                textoOpcional(i, "concepto"));
     }
 
     private HttpRequest.Builder solicitud(String ruta) {
@@ -207,7 +219,8 @@ public class BancoApi implements AutoCloseable {
             for (var elemento : json.getAsJsonArray()) {
                 var c = elemento.getAsJsonObject();
                 cuentas.add(new CuentaVista(c.get("iban").getAsString(), c.get("titular").getAsString(),
-                        c.get("saldo").getAsBigDecimal(), c.get("moneda").getAsString()));
+                        c.get("saldo").getAsBigDecimal(), c.get("moneda").getAsString(),
+                        c.get("estado").getAsString()));
             }
             return List.copyOf(cuentas);
         });

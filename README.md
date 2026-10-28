@@ -99,10 +99,10 @@ IBAN son ficticios pero válidos; la entidad `9999` representa a Countercheck.
 
 Usuarios de demostración (en la base solo se guarda su hash BCrypt):
 
-| Usuario | Contraseña | Rol |
-|---|---|---|
-| `empleado` | `empleado123` | `EMPLEADO` |
-| `supervisor` | `supervisor123` | `SUPERVISOR` |
+| Usuario | Contraseña | Nombre | Rol |
+|---|---|---|---|
+| `esanchez` | `empleado123` | Elena Sánchez Ruiz | `EMPLEADO` |
+| `jmoreno` | `supervisor123` | Javier Moreno Gil | `SUPERVISOR` |
 
 Los tokens se firman con la variable de entorno `JWT_SECRET`; sin ella se usa una
 clave de desarrollo que solo sirve en local.
@@ -137,8 +137,8 @@ login() {
   curl -s localhost:8080/api/login -H 'Content-Type: application/json' \
     -d "{\"usuario\":\"$1\",\"password\":\"$2\"}" | sed -E 's/.*"token":"([^"]+)".*/\1/'
 }
-EMPLEADO=$(login empleado empleado123)
-SUPERVISOR=$(login supervisor supervisor123)
+EMPLEADO=$(login esanchez empleado123)
+SUPERVISOR=$(login jmoreno supervisor123)
 
 # Transferencia de 60 EUR: supera el umbral (50 EUR) y genera una incidencia
 curl -i localhost:8080/api/transferencias \
@@ -192,6 +192,7 @@ aplica una sola vez y en orden, sobre la base existente y sin perder datos.
 | `db/migration/V1__esquema_inicial.sql` | Clientes, cuentas con IBAN, transferencias, incidencias, usuarios |
 | `db/migration/V2__auditoria.sql` | Quién crea cada transferencia y quién cambia cada incidencia |
 | `db/demo/V1_1__datos_demo.sql` | Datos de demostración (solo en local) |
+| `db/demo/V2_1__usuarios_corporativos.sql` | Migración de datos: usuarios con nombre corporativo |
 
 Para cambiar el esquema se añade un `V3__descripcion.sql`; una migración ya aplicada
 no se edita nunca. Los datos de demostración viven aparte para que un despliegue

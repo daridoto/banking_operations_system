@@ -1,9 +1,7 @@
 package banco.desktop.parts;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
-import java.util.Currency;
 import java.util.List;
 import java.util.Locale;
 import banco.desktop.api.BancoApi;
@@ -25,12 +23,12 @@ import org.eclipse.swt.widgets.*;
 
 // Pestaña Clientes: buscador a la izquierda y ficha (vista 360) a la derecha.
 public class ClientesPart {
-    private static final Locale ESPANA = Locale.forLanguageTag("es-ES");
     private static final DateTimeFormatter DIA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter DIA_HORA = DateTimeFormatter.ofPattern("dd/MM HH:mm");
-    private static final Color VERDE = new Color(46, 125, 50);
-    private static final Color ROJO = new Color(183, 28, 28);
-    private static final Color GRIS = new Color(117, 117, 117);
+    private static final Locale ESPANA = Estilo.ESPANA;
+    private static final Color VERDE = Estilo.VERDE;
+    private static final Color ROJO = Estilo.ROJO;
+    private static final Color GRIS = Estilo.GRIS;
     // Tiempo sin teclear antes de buscar, para no lanzar una petición por cada letra.
     private static final int ESPERA_BUSQUEDA_MS = 300;
 
@@ -239,11 +237,8 @@ public class ClientesPart {
                 .reduce(BigDecimal.ZERO, BigDecimal::add), moneda);
     }
 
-    // Formato español: 2.600,00 €
     private static String dinero(BigDecimal importe, String moneda) {
-        NumberFormat formato = NumberFormat.getCurrencyInstance(ESPANA);
-        formato.setCurrency(Currency.getInstance(moneda));
-        return formato.format(importe);
+        return Estilo.dinero(importe, moneda);
     }
 
     private static String ultimos4(String iban) {

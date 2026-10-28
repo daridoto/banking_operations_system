@@ -7,8 +7,8 @@ No accede directamente a H2.
 ## Inicio de sesión
 
 Al arrancar se muestra un diálogo de login; sin credenciales válidas no se abre la
-aplicación. Usuarios de demostración: `empleado`/`empleado123` y
-`supervisor`/`supervisor123`.
+aplicación. Usuarios de demostración: `esanchez`/`empleado123` (empleada) y
+`jmoreno`/`supervisor123` (supervisor).
 
 1. El cliente envía usuario y contraseña una sola vez a `POST /api/login` y recibe
    un token JWT. La contraseña no se guarda.
@@ -51,7 +51,9 @@ transacciones definitivas siguen en el backend.
 
 ## Archivos principales
 
-- `parts/SamplePart.java`: cuentas y formulario de transferencias.
+- `parts/CuentasPart.java`: indicadores del día, cuentas y formulario de transferencias.
+- `parts/Cabecera.java`: barra superior con la marca y el empleado conectado.
+- `parts/Indicador.java` y `parts/Estilo.java`: tarjeta de indicador, colores y formato de importes.
 - `parts/IncidenciasPart.java`: lista, detalle, historial y acciones de incidencias.
 - `parts/ClientesPart.java`: buscador y ficha del cliente.
 - `parts/Avatar.java`: silueta de persona o edificio dibujada con código (GC).
