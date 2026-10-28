@@ -153,6 +153,8 @@ public class IncidenciasPart {
                 if (!texto.isEmpty()) texto.append("\n\n");
                 texto.append("Cambio ").append(cambio.id()).append(" — ").append(FECHA.format(cambio.fecha()))
                         .append("\n").append(cambio.estadoAnterior()).append(" → ").append(cambio.estadoNuevo());
+                // Auditoría: quién hizo el cambio (los anteriores a la V2 no lo tienen).
+                if (cambio.usuario() != null) texto.append(" · por ").append(cambio.usuario());
                 if (cambio.comentario() != null && !cambio.comentario().isBlank()) {
                     texto.append("\nComentario: ").append(cambio.comentario());
                 }

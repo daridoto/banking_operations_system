@@ -21,6 +21,7 @@ public class SamplePart {
     private Combo origen;
     private Combo destino;
     private Text importe;
+    private Text concepto;
     private Label estado;
 
     @PostConstruct
@@ -35,8 +36,8 @@ public class SamplePart {
         tabla.setHeaderVisible(true);
         tabla.setLinesVisible(true);
         tabla.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-        String[] titulos = {"ID", "Titular", "Saldo", "Moneda"};
-        int[] anchos = {70, 220, 130, 90};
+        String[] titulos = {"IBAN", "Titular", "Saldo", "Moneda"};
+        int[] anchos = {260, 220, 130, 90};
         for (int i = 0; i < titulos.length; i++) {
             TableColumn columna = new TableColumn(tabla, SWT.NONE);
             columna.setText(titulos[i]);
@@ -59,13 +60,20 @@ public class SamplePart {
         new Label(formulario, SWT.NONE).setText("Cuenta de origen");
         origen = new Combo(formulario, SWT.READ_ONLY);
         origen.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        new Label(formulario, SWT.NONE).setText("Cuenta de destino");
-        destino = new Combo(formulario, SWT.READ_ONLY);
+        // El destino se puede elegir de la lista o escribir: en la vida real el IBAN
+        // del beneficiario lo dicta el cliente. El backend comprueba que sea válido.
+        new Label(formulario, SWT.NONE).setText("IBAN de destino");
+        destino = new Combo(formulario, SWT.DROP_DOWN);
         destino.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         new Label(formulario, SWT.NONE).setText("Importe");
         importe = new Text(formulario, SWT.BORDER);
         importe.setMessage("Ejemplo: 20,00");
         importe.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        new Label(formulario, SWT.NONE).setText("Concepto");
+        concepto = new Text(formulario, SWT.BORDER);
+        concepto.setMessage("Opcional, hasta 140 caracteres");
+        concepto.setTextLimit(140);
+        concepto.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         transferir = new Button(formulario, SWT.PUSH);
         transferir.setText("Transferir");
         transferir.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, false, 2, 1));
@@ -78,9 +86,9 @@ public class SamplePart {
             if (error == null) {
                 cuentas = resultado;
                 mostrarCuentas();
-                String[] etiquetas = cuentas.stream().map(CuentaVista::etiqueta).toArray(String[]::new);
-                origen.setItems(etiquetas);
-                destino.setItems(etiquetas);
+                origen.setItems(cuentas.stream().map(CuentaVista::etiqueta).toArray(String[]::new));
+                destino.setItems(cuentas.stream()
+                        .map(c -> c.ibanFormateado() + " (" + c.titular() + ")").toArray(String[]::new));
                 if (!cuentas.isEmpty()) origen.select(0);
                 if (cuentas.size() > 1) destino.select(1);
                 mensaje(cuentas.isEmpty() ? "No hay cuentas." : "Cuentas actualizadas.");
@@ -93,8 +101,11 @@ public class SamplePart {
 
     // El clic recoge los valores y llama a la API; las reglas bancarias siguen en el backend.
     private void enviarTransferencia(Display display) {
-        if (origen.getSelectionIndex() < 0 || destino.getSelectionIndex() < 0) {
-            mensaje("Selecciona las dos cuentas.");
+        // Se descarta el titular entre paréntesis (si se eligió de la lista) y se quitan
+        // los espacios: el IBAN viaja en formato electrónico.
+        String ibanDestino = destino.getText().replaceAll("\\(.*$", "").replace(" ", "").toUpperCase();
+        if (origen.getSelectionIndex() < 0 || ibanDestino.isEmpty()) {
+            mensaje("Selecciona la cuenta de origen e indica el IBAN de destino.");
             return;
         }
         BigDecimal cantidad;
@@ -107,21 +118,21 @@ public class SamplePart {
             mensaje("Introduce un importe positivo, sin separadores de miles y con máximo dos decimales.");
             return;
         }
-        long idOrigen = cuentas.get(origen.getSelectionIndex()).id();
-        long idDestino = cuentas.get(destino.getSelectionIndex()).id();
-        if (idOrigen == idDestino) {
+        String ibanOrigen = cuentas.get(origen.getSelectionIndex()).iban();
+        if (ibanOrigen.equals(ibanDestino)) {
             mensaje("Selecciona cuentas distintas.");
             return;
         }
         ocupado(true); // Evita otro envío mientras esperamos la respuesta.
         mensaje("Enviando transferencia…");
-        api.transferir(idOrigen, idDestino, cantidad).whenComplete((resultado, error) -> enPantalla(display, () -> {
+        api.transferir(ibanOrigen, ibanDestino, cantidad, concepto.getText().strip()).whenComplete((resultado, error) -> enPantalla(display, () -> {
             if (error == null) {
                 // POST devuelve las dos cuentas modificadas; conservamos las demás.
                 cuentas = cuentas.stream().map(c -> resultado.stream()
-                        .filter(nueva -> nueva.id() == c.id()).findFirst().orElse(c)).toList();
+                        .filter(nueva -> nueva.iban().equals(c.iban())).findFirst().orElse(c)).toList();
                 mostrarCuentas();
                 importe.setText("");
+                concepto.setText("");
                 mensaje("Transferencia realizada. Saldos actualizados.");
             } else {
                 Throwable causa = error;
@@ -140,7 +151,7 @@ public class SamplePart {
         tabla.removeAll();
         for (CuentaVista c : cuentas) {
             new TableItem(tabla, SWT.NONE).setText(new String[] {
-                    Long.toString(c.id()), c.titular(), c.saldo().toPlainString(), c.moneda()});
+                    c.ibanFormateado(), c.titular(), c.saldo().toPlainString(), c.moneda()});
         }
     }
 
@@ -150,6 +161,7 @@ public class SamplePart {
         origen.setEnabled(disponible);
         destino.setEnabled(disponible);
         importe.setEnabled(disponible);
+        concepto.setEnabled(disponible);
         transferir.setEnabled(disponible);
     }
 

@@ -50,11 +50,14 @@ public class BancoApi implements AutoCloseable {
                 .thenApply(json -> json.getAsJsonObject().get("rol").getAsString());
     }
 
-    public CompletableFuture<List<CuentaVista>> transferir(long origen, long destino, BigDecimal importe) {
+    // El backend valida los IBAN (formato y dígito de control) y responde 400 si fallan.
+    public CompletableFuture<List<CuentaVista>> transferir(String ibanOrigen, String ibanDestino,
+                                                          BigDecimal importe, String concepto) {
         JsonObject json = new JsonObject();
-        json.addProperty("cuentaOrigenId", origen);
-        json.addProperty("cuentaDestinoId", destino);
+        json.addProperty("ibanOrigen", ibanOrigen);
+        json.addProperty("ibanDestino", ibanDestino);
         json.addProperty("importe", importe);
+        json.addProperty("concepto", concepto);
         return enviar(solicitud("api/transferencias")
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(json.toString())).build());
@@ -92,10 +95,12 @@ public class BancoApi implements AutoCloseable {
             for (var elemento : json.getAsJsonArray()) {
                 var c = elemento.getAsJsonObject();
                 var comentario = c.get("comentario");
+                var usuario = c.get("usuario");
                 cambios.add(new CambioIncidenciaVista(c.get("id").getAsLong(),
                         c.get("incidenciaId").getAsLong(), c.get("estadoAnterior").getAsString(),
                         c.get("estadoNuevo").getAsString(), OffsetDateTime.parse(c.get("fecha").getAsString()),
-                        comentario == null || comentario.isJsonNull() ? null : comentario.getAsString()));
+                        comentario == null || comentario.isJsonNull() ? null : comentario.getAsString(),
+                        usuario == null || usuario.isJsonNull() ? null : usuario.getAsString()));
             }
             return List.copyOf(cambios);
         });
@@ -142,7 +147,7 @@ public class BancoApi implements AutoCloseable {
             List<CuentaVista> cuentas = new ArrayList<>();
             for (var elemento : json.getAsJsonArray()) {
                 var c = elemento.getAsJsonObject();
-                cuentas.add(new CuentaVista(c.get("id").getAsLong(), c.get("titular").getAsString(),
+                cuentas.add(new CuentaVista(c.get("iban").getAsString(), c.get("titular").getAsString(),
                         c.get("saldo").getAsBigDecimal(), c.get("moneda").getAsString()));
             }
             return List.copyOf(cuentas);
