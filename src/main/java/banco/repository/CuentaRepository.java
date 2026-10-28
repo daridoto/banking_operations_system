@@ -12,22 +12,28 @@ import org.springframework.stereotype.Repository;
 public class CuentaRepository {
     private final JdbcTemplate jdbc;
     private final RowMapper<Cuenta> convertirFila = (fila, numero) -> new Cuenta(
-            fila.getLong("id"), fila.getString("titular"),
+            fila.getLong("id"), fila.getString("iban"), fila.getString("titular"),
             fila.getBigDecimal("saldo"), fila.getString("moneda"));
 
     public CuentaRepository(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
 
+    // El titular ya no es una columna: sale del cliente (razón social o nombre y apellidos).
+    private static final String SELECT_CUENTA = """
+            SELECT c.id, c.iban, COALESCE(cl.razon_social, cl.nombre || ' ' || cl.apellidos) AS titular,
+                   c.saldo, c.moneda
+            FROM cuentas c JOIN clientes cl ON cl.id = c.cliente_id
+            """;
+
     public List<Cuenta> listar() {
-        return jdbc.query("SELECT id, titular, saldo, moneda FROM cuentas ORDER BY id", convertirFila);
+        return jdbc.query(SELECT_CUENTA + "ORDER BY c.id", convertirFila);
     }
 
     // FOR UPDATE bloquea la fila hasta que termine la transacción.
-    public Cuenta buscarParaActualizar(long id) {
-        return jdbc.query("SELECT id, titular, saldo, moneda FROM cuentas WHERE id = ? FOR UPDATE",
-                        convertirFila, id).stream().findFirst()
-                .orElseThrow(() -> new NoSuchElementException("No existe la cuenta " + id + "."));
+    public Cuenta buscarParaActualizar(String iban) {
+        return jdbc.query(SELECT_CUENTA + "WHERE c.iban = ? FOR UPDATE", convertirFila, iban).stream().findFirst()
+                .orElseThrow(() -> new NoSuchElementException("No existe ninguna cuenta con IBAN " + iban + "."));
     }
 
     public void guardarSaldo(Cuenta cuenta) {

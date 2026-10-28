@@ -1,5 +1,8 @@
 package banco;
 
+import static banco.DatosPrueba.IBAN_ANA;
+import static banco.DatosPrueba.IBAN_LUIS;
+
 import banco.service.BancoService;
 import banco.dto.SolicitudTransferencia;
 
@@ -27,14 +30,14 @@ class BancoPersistenciaTest {
 
     @Test
     void guardaSaldosYRegistroEnSql() {
-        banco.transferir(new SolicitudTransferencia(1L, 2L, new BigDecimal("20.00")));
+        banco.transferir(new SolicitudTransferencia(IBAN_ANA, IBAN_LUIS, new BigDecimal("20.00"), null), "empleado");
 
         assertEquals(new BigDecimal("80.00"), saldo(1));
         assertEquals(new BigDecimal("70.00"), saldo(2));
         var historial = banco.listarTransferencias();
         assertEquals(1, historial.size());
-        assertEquals(1L, historial.get(0).cuentaOrigenId());
-        assertEquals(2L, historial.get(0).cuentaDestinoId());
+        assertEquals(IBAN_ANA, historial.get(0).ibanOrigen());
+        assertEquals(IBAN_LUIS, historial.get(0).ibanDestino());
         assertEquals(new BigDecimal("20.00"), historial.get(0).importe());
         assertEquals("EUR", historial.get(0).moneda());
         assertNotNull(historial.get(0).fecha());
@@ -46,7 +49,7 @@ class BancoPersistenciaTest {
         jdbc.execute("ALTER TABLE transferencias ADD CONSTRAINT fallo_prueba CHECK (importe <> 20)");
 
         assertThrows(DataAccessException.class, () -> banco.transferir(
-                new SolicitudTransferencia(1L, 2L, new BigDecimal("20.00"))));
+                new SolicitudTransferencia(IBAN_ANA, IBAN_LUIS, new BigDecimal("20.00"), null), "empleado"));
 
         assertEquals(new BigDecimal("100.00"), saldo(1));
         assertEquals(new BigDecimal("50.00"), saldo(2));
@@ -56,7 +59,7 @@ class BancoPersistenciaTest {
     @Test
     void rechazaFraccionesDeCentimoSinRedondearNiRegistrar() {
         assertThrows(IllegalArgumentException.class, () -> banco.transferir(
-                new SolicitudTransferencia(1L, 2L, new BigDecimal("0.001"))));
+                new SolicitudTransferencia(IBAN_ANA, IBAN_LUIS, new BigDecimal("0.001"), null), "empleado"));
         assertEquals(new BigDecimal("100.00"), saldo(1));
         assertEquals(new BigDecimal("50.00"), saldo(2));
         assertTrue(banco.listarTransferencias().isEmpty());
@@ -70,7 +73,7 @@ class BancoPersistenciaTest {
             for (int i = 0; i < 10; i++) {
                 peticiones.add(() -> {
                     try {
-                        banco.transferir(new SolicitudTransferencia(1L, 2L, new BigDecimal("20.00")));
+                        banco.transferir(new SolicitudTransferencia(IBAN_ANA, IBAN_LUIS, new BigDecimal("20.00"), null), "empleado");
                         return true;
                     } catch (IllegalArgumentException sinSaldo) {
                         assertEquals("Saldo insuficiente.", sinSaldo.getMessage());

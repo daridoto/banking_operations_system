@@ -39,7 +39,7 @@ public class ApiExceptionHandler {
         if (error.getBindingResult().getTarget() instanceof SolicitudResolucion) {
             return Map.of("error", "Indica un comentario de resolución de entre 1 y 1000 caracteres, no solo espacios.");
         }
-        return Map.of("error", "Indica dos IDs positivos y un importe positivo con máximo dos decimales y 15 dígitos enteros.");
+        return Map.of("error", "Indica los IBAN de origen y destino, un importe positivo con máximo dos decimales y 15 dígitos enteros, y un concepto de hasta 140 caracteres.");
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

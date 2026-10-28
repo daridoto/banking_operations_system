@@ -1,5 +1,8 @@
 package banco;
 
+import static banco.DatosPrueba.IBAN_ANA;
+import static banco.DatosPrueba.IBAN_LUIS;
+
 import banco.service.BancoService;
 import banco.dto.SolicitudTransferencia;
 
@@ -22,13 +25,11 @@ class ReinicioPersistenciaTest {
         String url = "jdbc:h2:file:" + directorio.resolve("banco").toAbsolutePath();
         try (var primera = arrancar(url)) {
             primera.getBean(BancoService.class).transferir(
-                    new SolicitudTransferencia(1L, 2L, new BigDecimal("60.00")));
+                    new SolicitudTransferencia(IBAN_ANA, IBAN_LUIS, new BigDecimal("60.00"), null), "empleado");
             BancoService banco = primera.getBean(BancoService.class);
-            banco.iniciarRevision(banco.listarIncidencias().get(0).id());
-            // Simula el esquema anterior a la incorporación del comentario.
-            primera.getBean(JdbcTemplate.class).execute("ALTER TABLE cambios_incidencia DROP COLUMN comentario");
+            banco.iniciarRevision(banco.listarIncidencias().get(0).id(), "empleado");
         }
-        // Abre de nuevo el archivo y vuelve a ejecutar schema.sql y data.sql.
+        // Abre de nuevo el archivo: Flyway ve las migraciones ya aplicadas y no toca nada.
         try (var segunda = arrancar(url)) {
             BancoService banco = segunda.getBean(BancoService.class);
             var cuentas = banco.listarCuentas();
@@ -40,7 +41,7 @@ class ReinicioPersistenciaTest {
             assertEquals(banco.listarTransferencias().get(0).id(),
                     banco.listarIncidencias().get(0).transferenciaId());
             assertEquals("EN_REVISION", banco.listarIncidencias().get(0).estado());
-            banco.resolverIncidencia(banco.listarIncidencias().get(0).id(), "Operación justificada.");
+            banco.resolverIncidencia(banco.listarIncidencias().get(0).id(), "Operación justificada.", "supervisor");
         }
         try (var tercera = arrancar(url)) {
             assertEquals("RESUELTA", tercera.getBean(BancoService.class).listarIncidencias().get(0).estado());
@@ -48,6 +49,9 @@ class ReinicioPersistenciaTest {
                     .queryForList("SELECT * FROM cambios_incidencia ORDER BY id");
             assertEquals(2, cambios.size());
             assertEquals("Operación justificada.", cambios.get(1).get("COMENTARIO"));
+            // Auditoría: quién revisó y quién resolvió, también tras reiniciar.
+            assertEquals("empleado", cambios.get(0).get("USUARIO"));
+            assertEquals("supervisor", cambios.get(1).get("USUARIO"));
             org.junit.jupiter.api.Assertions.assertNotNull(cambios.get(1).get("FECHA"));
         }
     }
@@ -55,6 +59,7 @@ class ReinicioPersistenciaTest {
     private ConfigurableApplicationContext arrancar(String url) {
         return new SpringApplicationBuilder(Main.class)
                 .web(WebApplicationType.NONE)
+                .profiles("test") // datos de prueba; la URL de abajo sustituye a la de memoria
                 .run("--spring.datasource.url=" + url, "--banco.deteccion.umbral-eur=50.00");
     }
 }

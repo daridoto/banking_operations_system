@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
-@WithMockUser
+@WithMockUser(username = "empleado")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class BancoApiTest {
     @Autowired
@@ -39,7 +39,7 @@ class BancoApiTest {
         api.perform(post("/api/transferencias")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"cuentaOrigenId":1,"cuentaDestinoId":2,"importe":20.00}
+                        {"ibanOrigen":"ES6099990001410000123456","ibanDestino":"ES2599990001450000234567","importe":20.00,"concepto":"Alquiler octubre"}
                         """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].saldo").value(80))
@@ -48,10 +48,13 @@ class BancoApiTest {
         api.perform(get("/api/transferencias"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].cuentaOrigenId").value(1))
-                .andExpect(jsonPath("$[0].cuentaDestinoId").value(2))
+                .andExpect(jsonPath("$[0].ibanOrigen").value(DatosPrueba.IBAN_ANA))
+                .andExpect(jsonPath("$[0].ibanDestino").value(DatosPrueba.IBAN_LUIS))
+                .andExpect(jsonPath("$[0].concepto").value("Alquiler octubre"))
                 .andExpect(jsonPath("$[0].importe").value(20))
-                .andExpect(jsonPath("$[0].fecha").isNotEmpty());
+                .andExpect(jsonPath("$[0].fecha").isNotEmpty())
+                // Auditoría: queda registrado el usuario autenticado que la hizo.
+                .andExpect(jsonPath("$[0].creadaPor").value("empleado"));
 
         api.perform(get("/api/cuentas"))
                 .andExpect(status().isOk())
@@ -61,13 +64,17 @@ class BancoApiTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-            "{\"cuentaOrigenId\":1,\"cuentaDestinoId\":2,\"importe\":100.01}",
-            "{\"cuentaOrigenId\":1,\"cuentaDestinoId\":1,\"importe\":20}",
-            "{\"cuentaOrigenId\":1,\"cuentaDestinoId\":2,\"importe\":-20}",
-            "{\"cuentaOrigenId\":1,\"cuentaDestinoId\":2,\"importe\":0}",
-            "{\"cuentaOrigenId\":1,\"cuentaDestinoId\":2,\"importe\":0.001}",
-            "{\"cuentaOrigenId\":1,\"cuentaDestinoId\":2}",
-            "{\"cuentaOrigenId\":1.5,\"cuentaDestinoId\":2,\"importe\":20}",
+            "{\"ibanOrigen\":\"ES6099990001410000123456\",\"ibanDestino\":\"ES2599990001450000234567\",\"importe\":100.01}",
+            "{\"ibanOrigen\":\"ES6099990001410000123456\",\"ibanDestino\":\"ES6099990001410000123456\",\"importe\":20}",
+            "{\"ibanOrigen\":\"ES6099990001410000123456\",\"ibanDestino\":\"ES2599990001450000234567\",\"importe\":-20}",
+            "{\"ibanOrigen\":\"ES6099990001410000123456\",\"ibanDestino\":\"ES2599990001450000234567\",\"importe\":0}",
+            "{\"ibanOrigen\":\"ES6099990001410000123456\",\"ibanDestino\":\"ES2599990001450000234567\",\"importe\":0.001}",
+            "{\"ibanOrigen\":\"ES6099990001410000123456\",\"ibanDestino\":\"ES2599990001450000234567\"}",
+            // IBAN con una cifra cambiada: falla el dígito de control.
+            "{\"ibanOrigen\":\"ES6099990001410000123457\",\"ibanDestino\":\"ES2599990001450000234567\",\"importe\":20}",
+            // El mismo IBAN escrito con espacios cuenta como la misma cuenta.
+            "{\"ibanOrigen\":\"ES6099990001410000123456\",\"ibanDestino\":\"ES60 9999 0001 4100 0012 3456\",\"importe\":20}",
+            "{\"ibanOrigen\":\"ES6099990001410000123456\",\"ibanDestino\":\"ES2599990001450000234567\",\"importe\":20,\"concepto\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}",
             "{}", "null", "no es json"
     })
     void rechazaPeticionesInvalidasSinCambiarSaldos(String json) throws Exception {
@@ -84,10 +91,10 @@ class BancoApiTest {
         api.perform(post("/api/transferencias")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"cuentaOrigenId":1,"cuentaDestinoId":999,"importe":20}
+                        {"ibanOrigen":"ES6099990001410000123456","ibanDestino":"ES9121000418450200051332","importe":20}
                         """))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("No existe la cuenta 999."));
+                .andExpect(jsonPath("$.error").value("No existe ninguna cuenta con IBAN ES9121000418450200051332."));
         comprobarSaldosIniciales();
         comprobarHistorialVacio();
     }
@@ -102,9 +109,10 @@ class BancoApiTest {
         api.perform(get("/api/cuentas"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].iban").value(DatosPrueba.IBAN_ANA))
+                .andExpect(jsonPath("$[0].titular").value("Ana García López"))
                 .andExpect(jsonPath("$[0].saldo").value(100))
-                .andExpect(jsonPath("$[1].id").value(2))
+                .andExpect(jsonPath("$[1].iban").value(DatosPrueba.IBAN_LUIS))
                 .andExpect(jsonPath("$[1].saldo").value(50));
     }
 }

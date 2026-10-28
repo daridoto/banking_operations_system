@@ -18,17 +18,19 @@ public class TransferenciaRepository {
         this.jdbc = jdbc;
     }
 
-    public long registrar(Cuenta origen, Cuenta destino, BigDecimal importe) {
+    public long registrar(Cuenta origen, Cuenta destino, BigDecimal importe, String concepto, String creadaPor) {
         var clave = new GeneratedKeyHolder();
         jdbc.update(conexion -> {
             var sentencia = conexion.prepareStatement("""
-                INSERT INTO transferencias (cuenta_origen_id, cuenta_destino_id, importe, moneda)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO transferencias (cuenta_origen_id, cuenta_destino_id, importe, moneda, concepto, creada_por)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """, new String[]{"id"});
             sentencia.setLong(1, origen.getId());
             sentencia.setLong(2, destino.getId());
             sentencia.setBigDecimal(3, importe);
             sentencia.setString(4, origen.getMoneda().getCurrencyCode());
+            sentencia.setString(5, concepto);
+            sentencia.setString(6, creadaPor);
             return sentencia;
         }, clave);
         Number id = clave.getKey();
@@ -39,9 +41,18 @@ public class TransferenciaRepository {
     }
 
     public List<Transferencia> listar() {
-        return jdbc.query("SELECT * FROM transferencias ORDER BY id", (fila, numero) ->
-                new Transferencia(fila.getLong("id"), fila.getLong("cuenta_origen_id"),
-                        fila.getLong("cuenta_destino_id"), fila.getBigDecimal("importe"),
-                        fila.getString("moneda"), fila.getObject("fecha", OffsetDateTime.class)));
+        // Los IDs internos se traducen a IBAN uniendo dos veces con cuentas.
+        return jdbc.query("""
+                SELECT t.id, o.iban AS iban_origen, d.iban AS iban_destino, t.importe, t.moneda,
+                       t.concepto, t.fecha, t.creada_por
+                FROM transferencias t
+                JOIN cuentas o ON o.id = t.cuenta_origen_id
+                JOIN cuentas d ON d.id = t.cuenta_destino_id
+                ORDER BY t.id
+                """, (fila, numero) ->
+                new Transferencia(fila.getLong("id"), fila.getString("iban_origen"),
+                        fila.getString("iban_destino"), fila.getBigDecimal("importe"),
+                        fila.getString("moneda"), fila.getString("concepto"),
+                        fila.getObject("fecha", OffsetDateTime.class), fila.getString("creada_por")));
     }
 }

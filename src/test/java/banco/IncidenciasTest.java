@@ -1,5 +1,8 @@
 package banco;
 
+import static banco.DatosPrueba.IBAN_ANA;
+import static banco.DatosPrueba.IBAN_LUIS;
+
 import banco.service.BancoService;
 import banco.dto.SolicitudTransferencia;
 import banco.model.Incidencia;
@@ -26,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = "banco.deteccion.umbral-eur=50.00")
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
-@WithMockUser
+@WithMockUser(username = "empleado")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class IncidenciasTest {
     @Autowired private BancoService banco;
@@ -37,7 +40,7 @@ class IncidenciasTest {
     void transferenciaElevadaSeRealizaYGeneraIncidenciaConsultable() throws Exception {
         api.perform(post("/api/transferencias").contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"cuentaOrigenId":1,"cuentaDestinoId":2,"importe":60.00}
+                        {"ibanOrigen":"ES6099990001410000123456","ibanDestino":"ES2599990001450000234567","importe":60.00}
                         """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].saldo").value(40))
@@ -58,15 +61,15 @@ class IncidenciasTest {
     @ParameterizedTest
     @ValueSource(strings = {"20.00", "50.00"})
     void noGeneraIncidenciaPorDebajoONivelDelUmbral(String importe) {
-        banco.transferir(new SolicitudTransferencia(1L, 2L, new BigDecimal(importe)));
+        banco.transferir(new SolicitudTransferencia(IBAN_ANA, IBAN_LUIS, new BigDecimal(importe), null), "empleado");
         assertEquals(1, banco.listarTransferencias().size());
         assertTrue(banco.listarIncidencias().isEmpty());
     }
 
     @Test
     void consultaUnaIncidenciaPorSuId() throws Exception {
-        banco.transferir(new SolicitudTransferencia(1L, 2L, new BigDecimal("60.00")));
-        banco.transferir(new SolicitudTransferencia(2L, 1L, new BigDecimal("70.00")));
+        banco.transferir(new SolicitudTransferencia(IBAN_ANA, IBAN_LUIS, new BigDecimal("60.00"), null), "empleado");
+        banco.transferir(new SolicitudTransferencia(IBAN_LUIS, IBAN_ANA, new BigDecimal("70.00"), null), "empleado");
         Incidencia incidencia = banco.listarIncidencias().get(1);
 
         api.perform(get("/api/incidencias/{id}", incidencia.id()))
@@ -89,14 +92,14 @@ class IncidenciasTest {
 
     @Test
     void generaIncidenciaUnCentimoPorEncimaDelUmbral() {
-        banco.transferir(new SolicitudTransferencia(1L, 2L, new BigDecimal("50.01")));
+        banco.transferir(new SolicitudTransferencia(IBAN_ANA, IBAN_LUIS, new BigDecimal("50.01"), null), "empleado");
         assertEquals(1, banco.listarIncidencias().size());
     }
 
     @Test
     void transferenciaRechazadaNoGeneraIncidencia() {
         assertThrows(IllegalArgumentException.class, () -> banco.transferir(
-                new SolicitudTransferencia(1L, 2L, new BigDecimal("101.00"))));
+                new SolicitudTransferencia(IBAN_ANA, IBAN_LUIS, new BigDecimal("101.00"), null), "empleado"));
         comprobarSinCambios();
     }
 
@@ -105,7 +108,7 @@ class IncidenciasTest {
         // Provoca un fallo real en la última escritura SQL, en una base aislada.
         jdbc.execute("ALTER TABLE incidencias ADD CONSTRAINT fallo_incidencia CHECK (prioridad <> 'MEDIA')");
         assertThrows(DataAccessException.class, () -> banco.transferir(
-                new SolicitudTransferencia(1L, 2L, new BigDecimal("60.00"))));
+                new SolicitudTransferencia(IBAN_ANA, IBAN_LUIS, new BigDecimal("60.00"), null), "empleado"));
         comprobarSinCambios();
     }
 
@@ -157,23 +160,23 @@ class IncidenciasTest {
     void falloDelHistorialRevierteCambioDeEstado() {
         long id = crearIncidencia();
         jdbc.execute("ALTER TABLE cambios_incidencia ADD CONSTRAINT fallo_cambio CHECK (estado_nuevo <> 'EN_REVISION')");
-        assertThrows(DataAccessException.class, () -> banco.iniciarRevision(id));
+        assertThrows(DataAccessException.class, () -> banco.iniciarRevision(id, "empleado"));
         assertEquals("PENDIENTE", banco.consultarIncidencia(id).estado());
         assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM cambios_incidencia", Integer.class));
     }
 
     private long crearIncidencia() {
-        banco.transferir(new SolicitudTransferencia(1L, 2L, new BigDecimal("60.00")));
+        banco.transferir(new SolicitudTransferencia(IBAN_ANA, IBAN_LUIS, new BigDecimal("60.00"), null), "empleado");
         return banco.listarIncidencias().get(0).id();
     }
 
     @Test
     void consultaHistorialOrdenadoSoloDeLaIncidenciaIndicada() throws Exception {
         long id = crearIncidencia();
-        banco.iniciarRevision(id);
-        banco.resolverIncidencia(id, "Operación justificada.");
-        banco.transferir(new SolicitudTransferencia(2L, 1L, new BigDecimal("70.00")));
-        banco.iniciarRevision(banco.listarIncidencias().get(1).id());
+        banco.iniciarRevision(id, "empleado");
+        banco.resolverIncidencia(id, "Operación justificada.", "supervisor");
+        banco.transferir(new SolicitudTransferencia(IBAN_LUIS, IBAN_ANA, new BigDecimal("70.00"), null), "empleado");
+        banco.iniciarRevision(banco.listarIncidencias().get(1).id(), "empleado");
 
         api.perform(get("/api/incidencias/{id}/historial", id))
                 .andExpect(status().isOk())
@@ -206,10 +209,10 @@ class IncidenciasTest {
     }
 
     @Test
-    @WithMockUser(roles = "SUPERVISOR")
+    @WithMockUser(username = "supervisor", roles = "SUPERVISOR")
     void resuelveConComentarioYConservaHistorial() throws Exception {
         long id = crearIncidencia();
-        banco.iniciarRevision(id);
+        banco.iniciarRevision(id, "empleado");
         api.perform(post("/api/incidencias/{id}/resolucion", id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"comentario\":\"Operación justificada.\"}"))
@@ -230,10 +233,10 @@ class IncidenciasTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"{}", "{\"comentario\":null}", "{\"comentario\":\"\"}", "{\"comentario\":\"   \"}"})
-    @WithMockUser(roles = "SUPERVISOR")
+    @WithMockUser(username = "supervisor", roles = "SUPERVISOR")
     void rechazaResolucionSinComentario(String cuerpo) throws Exception {
         long id = crearIncidencia();
-        banco.iniciarRevision(id);
+        banco.iniciarRevision(id, "empleado");
         api.perform(post("/api/incidencias/{id}/resolucion", id)
                 .contentType(MediaType.APPLICATION_JSON).content(cuerpo))
                 .andExpect(status().isBadRequest())
@@ -243,10 +246,10 @@ class IncidenciasTest {
     }
 
     @Test
-    @WithMockUser(roles = "SUPERVISOR")
+    @WithMockUser(username = "supervisor", roles = "SUPERVISOR")
     void limitaLongitudDelComentario() throws Exception {
         long id = crearIncidencia();
-        banco.iniciarRevision(id);
+        banco.iniciarRevision(id, "empleado");
         api.perform(post("/api/incidencias/{id}/resolucion", id)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"comentario\":\"" + "a".repeat(1001) + "\"}"))
                 .andExpect(status().isBadRequest());
@@ -256,10 +259,10 @@ class IncidenciasTest {
     }
 
     @Test
-    @WithMockUser(roles = "EMPLEADO")
+    @WithMockUser(username = "empleado", roles = "EMPLEADO")
     void empleadoNoPuedeResolver() throws Exception {
         long id = crearIncidencia();
-        banco.iniciarRevision(id);
+        banco.iniciarRevision(id, "empleado");
         api.perform(post("/api/incidencias/{id}/resolucion", id)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"comentario\":\"Operación justificada.\"}"))
                 .andExpect(status().isForbidden());
@@ -268,7 +271,7 @@ class IncidenciasTest {
     }
 
     @Test
-    @WithMockUser(roles = "SUPERVISOR")
+    @WithMockUser(username = "supervisor", roles = "SUPERVISOR")
     void noResuelvePendienteNiInexistente() throws Exception {
         long id = crearIncidencia();
         api.perform(post("/api/incidencias/{id}/resolucion", id)
@@ -284,9 +287,9 @@ class IncidenciasTest {
     @Test
     void falloDelHistorialRevierteResolucion() {
         long id = crearIncidencia();
-        banco.iniciarRevision(id);
+        banco.iniciarRevision(id, "empleado");
         jdbc.execute("ALTER TABLE cambios_incidencia ADD CONSTRAINT fallo_resolucion CHECK (estado_nuevo <> 'RESUELTA')");
-        assertThrows(DataAccessException.class, () -> banco.resolverIncidencia(id, "Revisada"));
+        assertThrows(DataAccessException.class, () -> banco.resolverIncidencia(id, "Revisada", "supervisor"));
         assertEquals("EN_REVISION", banco.consultarIncidencia(id).estado());
         assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM cambios_incidencia", Integer.class));
     }

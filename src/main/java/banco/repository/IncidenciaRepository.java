@@ -51,15 +51,16 @@ public class IncidenciaRepository {
                 (fila, numero) -> new CambioIncidencia(
                         fila.getLong("id"), fila.getLong("incidencia_id"),
                         fila.getString("estado_anterior"), fila.getString("estado_nuevo"),
-                        fila.getObject("fecha", OffsetDateTime.class), fila.getString("comentario")),
+                        fila.getObject("fecha", OffsetDateTime.class), fila.getString("comentario"),
+                        fila.getString("usuario")),
                 incidenciaId);
     }
 
-    public void registrarInicioRevision(long id) {
+    public void registrarInicioRevision(long id, String usuario) {
         jdbc.update("""
-                INSERT INTO cambios_incidencia (incidencia_id, estado_anterior, estado_nuevo)
-                VALUES (?, 'PENDIENTE', 'EN_REVISION')
-                """, id);
+                INSERT INTO cambios_incidencia (incidencia_id, estado_anterior, estado_nuevo, usuario)
+                VALUES (?, 'PENDIENTE', 'EN_REVISION', ?)
+                """, id, usuario);
     }
 
     public boolean resolver(long id) {
@@ -67,10 +68,10 @@ public class IncidenciaRepository {
                 id) == 1;
     }
 
-    public void registrarResolucion(long id, String comentario) {
+    public void registrarResolucion(long id, String comentario, String usuario) {
         jdbc.update("""
-                INSERT INTO cambios_incidencia (incidencia_id, estado_anterior, estado_nuevo, comentario)
-                VALUES (?, 'EN_REVISION', 'RESUELTA', ?)
-                """, id, comentario);
+                INSERT INTO cambios_incidencia (incidencia_id, estado_anterior, estado_nuevo, comentario, usuario)
+                VALUES (?, 'EN_REVISION', 'RESUELTA', ?, ?)
+                """, id, comentario, usuario);
     }
 }

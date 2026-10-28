@@ -8,6 +8,7 @@ import banco.model.Transferencia;
 import banco.model.Incidencia;
 import banco.model.CambioIncidencia;
 
+import java.security.Principal;
 import java.util.List;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,8 +33,9 @@ public class BancoController {
     }
 
     @PostMapping("/transferencias")
-    public List<CuentaRespuesta> transferir(@Valid @RequestBody SolicitudTransferencia solicitud) {
-        return banco.transferir(solicitud);
+    public List<CuentaRespuesta> transferir(@Valid @RequestBody SolicitudTransferencia solicitud,
+                                            Principal usuario) {
+        return banco.transferir(solicitud, usuario.getName());
     }
 
     @GetMapping("/transferencias")
@@ -57,13 +59,14 @@ public class BancoController {
     }
 
     @PostMapping("/incidencias/{id}/revision")
-    public Incidencia iniciarRevision(@PathVariable("id") long id) {
-        return banco.iniciarRevision(id);
+    public Incidencia iniciarRevision(@PathVariable("id") long id, Principal usuario) {
+        return banco.iniciarRevision(id, usuario.getName());
     }
 
     @PostMapping("/incidencias/{id}/resolucion")
     public Incidencia resolverIncidencia(@PathVariable("id") long id,
-                                        @Valid @RequestBody SolicitudResolucion solicitud) {
-        return banco.resolverIncidencia(id, solicitud.comentario());
+                                        @Valid @RequestBody SolicitudResolucion solicitud,
+                                        Principal usuario) {
+        return banco.resolverIncidencia(id, solicitud.comentario(), usuario.getName());
     }
 }
