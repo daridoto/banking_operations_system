@@ -2,6 +2,9 @@ package banco.desktop.api;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -61,6 +64,62 @@ public class BancoApi implements AutoCloseable {
         return enviar(solicitud("api/transferencias")
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(json.toString())).build());
+    }
+
+    // El texto va codificado en la URL: "García López" viaja como "Garc%C3%ADa+L%C3%B3pez".
+    public CompletableFuture<List<ClienteVista>> buscarClientes(String texto) {
+        String q = URLEncoder.encode(texto, StandardCharsets.UTF_8);
+        return enviarJson(solicitud("api/clientes?q=" + q).GET().build()).thenApply(json -> {
+            List<ClienteVista> clientes = new ArrayList<>();
+            for (var elemento : json.getAsJsonArray()) {
+                var c = elemento.getAsJsonObject();
+                clientes.add(new ClienteVista(c.get("id").getAsLong(), c.get("tipo").getAsString(),
+                        c.get("nombre").getAsString(), c.get("documento").getAsString(),
+                        c.get("estado").getAsString()));
+            }
+            return List.copyOf(clientes);
+        });
+    }
+
+    public CompletableFuture<FichaClienteVista> consultarCliente(long id) {
+        return enviarJson(solicitud("api/clientes/" + id).GET().build()).thenApply(json -> {
+            var f = json.getAsJsonObject();
+            List<FichaClienteVista.Cuenta> cuentas = new ArrayList<>();
+            for (var e : f.getAsJsonArray("cuentas")) {
+                var c = e.getAsJsonObject();
+                cuentas.add(new FichaClienteVista.Cuenta(c.get("iban").getAsString(),
+                        c.get("saldo").getAsBigDecimal(), c.get("moneda").getAsString(),
+                        c.get("estado").getAsString(), LocalDate.parse(c.get("fechaApertura").getAsString())));
+            }
+            List<FichaClienteVista.Movimiento> movimientos = new ArrayList<>();
+            for (var e : f.getAsJsonArray("movimientos")) {
+                var m = e.getAsJsonObject();
+                movimientos.add(new FichaClienteVista.Movimiento(
+                        OffsetDateTime.parse(m.get("fecha").getAsString()), m.get("ibanPropio").getAsString(),
+                        m.get("sentido").getAsString(), m.get("contraparte").getAsString(),
+                        textoOpcional(m, "concepto"), m.get("importe").getAsBigDecimal(),
+                        m.get("moneda").getAsString()));
+            }
+            List<FichaClienteVista.Incidencia> incidencias = new ArrayList<>();
+            for (var e : f.getAsJsonArray("incidencias")) {
+                var i = e.getAsJsonObject();
+                incidencias.add(new FichaClienteVista.Incidencia(i.get("id").getAsLong(),
+                        i.get("regla").getAsString(), i.get("importe").getAsBigDecimal(),
+                        i.get("moneda").getAsString(), i.get("estado").getAsString(),
+                        textoOpcional(i, "resueltaPor")));
+            }
+            return new FichaClienteVista(f.get("id").getAsLong(), f.get("tipo").getAsString(),
+                    f.get("nombre").getAsString(), f.get("documento").getAsString(),
+                    f.get("tipoDocumento").getAsString(), f.get("estado").getAsString(),
+                    LocalDate.parse(f.get("fechaAlta").getAsString()),
+                    List.copyOf(cuentas), List.copyOf(movimientos), List.copyOf(incidencias));
+        });
+    }
+
+    // Campos que pueden venir como null en el JSON (concepto, resueltaPor...).
+    private static String textoOpcional(JsonObject objeto, String campo) {
+        var valor = objeto.get(campo);
+        return valor == null || valor.isJsonNull() ? null : valor.getAsString();
     }
 
     public CompletableFuture<List<IncidenciaVista>> listarIncidencias() {
