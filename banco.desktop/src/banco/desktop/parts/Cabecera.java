@@ -16,10 +16,9 @@ import org.eclipse.swt.widgets.Label;
 // Barra superior de la ventana: marca a la izquierda y empleado conectado a la derecha.
 // Se registra en Application.e4xmi como ToolControl de la barra superior (trim bar).
 public class Cabecera {
-    // Colores de la marca, sacados del logo de Countercheck.
-    private static final Color VERDE_MARCA = new Color(0x12, 0x46, 0x3C);
-    private static final Color MENTA = new Color(0x8F, 0xD1, 0xBC);
-    private static final Color BLANCO = new Color(255, 255, 255);
+    private static final Color VERDE_MARCA = Estilo.VERDE_MARCA;
+    private static final Color MENTA = Estilo.MENTA;
+    private static final Color BLANCO = Estilo.BLANCO;
 
     @PostConstruct
     public void crear(Composite parent) {

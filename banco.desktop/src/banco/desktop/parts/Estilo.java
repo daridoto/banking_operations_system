@@ -6,14 +6,18 @@ import java.util.Currency;
 import java.util.Locale;
 import org.eclipse.swt.graphics.Color;
 
-// Colores y formatos comunes a todas las pestañas, para que se vean coherentes.
-final class Estilo {
+// Colores y formatos comunes a toda la aplicación, para que se vea coherente.
+public final class Estilo {
+    // Colores de la marca, sacados del logo de Countercheck.
+    public static final Color VERDE_MARCA = new Color(0x12, 0x46, 0x3C);
+    public static final Color MENTA = new Color(0x8F, 0xD1, 0xBC);
+    public static final Color BLANCO = new Color(255, 255, 255);
     static final Locale ESPANA = Locale.forLanguageTag("es-ES");
     static final Color VERDE = new Color(46, 125, 50);
-    static final Color ROJO = new Color(183, 28, 28);
+    public static final Color ROJO = new Color(183, 28, 28);
     static final Color NARANJA = new Color(230, 126, 34);
     static final Color AZUL = new Color(25, 118, 210);
-    static final Color GRIS = new Color(117, 117, 117);
+    public static final Color GRIS = new Color(117, 117, 117);
 
     private Estilo() {
     }

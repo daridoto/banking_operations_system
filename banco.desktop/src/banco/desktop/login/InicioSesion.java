@@ -18,9 +18,10 @@ public class InicioSesion {
         Display display = Display.getDefault();
         Shell shell = new Shell(display);
         String error = null;
+        String usuarioPrevio = null;
 
         while (true) {
-            LoginDialog dialogo = new LoginDialog(shell, error);
+            LoginDialog dialogo = new LoginDialog(shell, error, usuarioPrevio);
             if (dialogo.open() != Window.OK) {
                 // El usuario canceló: no se abre la aplicación.
                 shell.dispose();
@@ -39,6 +40,7 @@ public class InicioSesion {
             } catch (Exception e) {
                 Sesion.cerrar();
                 error = mensajeDe(e);
+                usuarioPrevio = dialogo.usuario();
             }
         }
 
