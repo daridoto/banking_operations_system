@@ -1,31 +1,29 @@
 package banco.desktop.api;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-
-// Credenciales del usuario que ha iniciado sesión, compartidas por toda la app.
-// Se guardan solo en memoria mientras el cliente está abierto.
+// Datos del usuario que ha iniciado sesión, compartidos por toda la app.
+// Se guarda el token JWT, no la contraseña: esta solo viaja una vez, en el login.
+// Todo vive solo en memoria mientras el cliente está abierto.
 public final class Sesion {
     private static String usuario;
-    private static String password;
+    private static String token;
     private static String rol;
 
     private Sesion() {
     }
 
-    public static void iniciar(String usuario, String password) {
+    public static void iniciar(String usuario, String token) {
         Sesion.usuario = usuario;
-        Sesion.password = password;
+        Sesion.token = token;
     }
 
     public static void cerrar() {
         usuario = null;
-        password = null;
+        token = null;
         rol = null;
     }
 
-    public static boolean hayCredenciales() {
-        return usuario != null && password != null;
+    public static boolean hayToken() {
+        return token != null;
     }
 
     public static String usuario() {
@@ -40,11 +38,8 @@ public final class Sesion {
         return rol;
     }
 
-    // Cabecera Authorization para Basic: "usuario:password" codificado en Base64.
-    // Es lo mismo que hace la opción -u de curl.
-    public static String cabeceraBasic() {
-        String credenciales = usuario + ":" + password;
-        return "Basic " + Base64.getEncoder()
-                .encodeToString(credenciales.getBytes(StandardCharsets.UTF_8));
+    // Cabecera Authorization para JWT: el token se envía tal cual, sin codificar.
+    public static String cabeceraBearer() {
+        return "Bearer " + token;
     }
 }

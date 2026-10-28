@@ -32,7 +32,19 @@ public class BancoApi implements AutoCloseable {
         return enviar(solicitud("api/cuentas").GET().build());
     }
 
-    // Valida las credenciales y, de paso, devuelve el rol del usuario autenticado.
+    // Envía usuario y contraseña una sola vez y devuelve el token JWT.
+    // Contraseña incorrecta: el backend responde 401 y llega como ErrorApi.
+    public CompletableFuture<String> login(String usuario, String password) {
+        JsonObject json = new JsonObject();
+        json.addProperty("usuario", usuario);
+        json.addProperty("password", password);
+        return enviarJson(solicitud("api/login")
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json.toString())).build())
+                .thenApply(respuesta -> respuesta.getAsJsonObject().get("token").getAsString());
+    }
+
+    // Devuelve el rol del usuario al que pertenece el token.
     public CompletableFuture<String> consultarRol() {
         return enviarJson(solicitud("api/me").GET().build())
                 .thenApply(json -> json.getAsJsonObject().get("rol").getAsString());
@@ -101,9 +113,10 @@ public class BancoApi implements AutoCloseable {
         HttpRequest.Builder builder = HttpRequest.newBuilder(base.resolve(ruta))
                 .timeout(Duration.ofSeconds(10))
                 .header("Accept", "application/json");
-        // Todas las peticiones pasan por aquí: añadimos las credenciales en un solo sitio.
-        if (Sesion.hayCredenciales()) {
-            builder.header("Authorization", Sesion.cabeceraBasic());
+        // Todas las peticiones pasan por aquí: añadimos el token en un solo sitio.
+        // Antes del login no hay token, así que /api/login sale sin cabecera.
+        if (Sesion.hayToken()) {
+            builder.header("Authorization", Sesion.cabeceraBearer());
         }
         return builder;
     }

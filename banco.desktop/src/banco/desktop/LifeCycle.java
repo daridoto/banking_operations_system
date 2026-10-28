@@ -9,7 +9,7 @@ import banco.desktop.api.BancoApi;
 import banco.desktop.api.Sesion;
 
 // Se ejecuta al arrancar, antes de mostrar la ventana principal.
-// Pide credenciales y las valida contra el backend; sin login válido no se entra.
+// Pide credenciales, las cambia por un token JWT y obtiene el rol; sin login válido no se entra.
 public class LifeCycle {
 
     @PostContextCreate
@@ -26,9 +26,11 @@ public class LifeCycle {
                 System.exit(0);
             }
 
-            Sesion.iniciar(dialogo.usuario(), dialogo.password());
             try (BancoApi api = new BancoApi()) {
-                // /api/me valida las credenciales (200/401) y devuelve el rol.
+                // /api/login valida la contraseña (200/401) y devuelve el token.
+                String token = api.login(dialogo.usuario(), dialogo.password()).get(10, TimeUnit.SECONDS);
+                Sesion.iniciar(dialogo.usuario(), token);
+                // Con el token ya guardado, /api/me devuelve el rol.
                 String rol = api.consultarRol().get(10, TimeUnit.SECONDS);
                 Sesion.rol(rol);
                 break;
