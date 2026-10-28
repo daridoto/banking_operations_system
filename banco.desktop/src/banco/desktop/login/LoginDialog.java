@@ -1,4 +1,4 @@
-package banco.desktop;
+package banco.desktop.login;
 
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.swt.SWT;
@@ -11,7 +11,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 // Cuadro de inicio de sesión: pide usuario y contraseña. No habla con la API;
-// solo recoge lo que el usuario escribe. La validación la hace LifeCycle.
+// solo recoge lo que el usuario escribe. La validación la hace InicioSesion.
 class LoginDialog extends Dialog {
     private Text usuarioText;
     private Text passwordText;

@@ -7,7 +7,7 @@
    </configIni>
 
    <launcherArgs>
-      <programArgs>-clearPersistedState -lifeCycleURI bundleclass://banco.desktop/banco.desktop.LifeCycle
+      <programArgs>-clearPersistedState -lifeCycleURI bundleclass://banco.desktop/banco.desktop.login.InicioSesion
       </programArgs>
       <vmArgsMac>-XstartOnFirstThread -Dorg.eclipse.swt.internal.carbon.smallFonts
       </vmArgsMac>

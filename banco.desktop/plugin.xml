@@ -18,7 +18,7 @@
          </property>
          <property
                name="lifeCycleURI"
-               value="bundleclass://banco.desktop/banco.desktop.LifeCycle">
+               value="bundleclass://banco.desktop/banco.desktop.login.InicioSesion">
          </property>
       </product>
    </extension>

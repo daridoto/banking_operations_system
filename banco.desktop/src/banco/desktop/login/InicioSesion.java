@@ -1,4 +1,4 @@
-package banco.desktop;
+package banco.desktop.login;
 
 import java.util.concurrent.TimeUnit;
 import org.eclipse.e4.ui.workbench.lifecycle.PostContextCreate;
@@ -10,7 +10,8 @@ import banco.desktop.api.Sesion;
 
 // Se ejecuta al arrancar, antes de mostrar la ventana principal.
 // Pide credenciales, las cambia por un token JWT y obtiene el rol; sin login válido no se entra.
-public class LifeCycle {
+// Es la clase de "ciclo de vida" de e4: se registra con -lifeCycleURI en banco.desktop.product.
+public class InicioSesion {
 
     @PostContextCreate
     void login() {

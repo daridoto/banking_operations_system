@@ -57,7 +57,8 @@ transacciones definitivas siguen en el backend.
 - `parts/IncidenciasPart.java`: lista, detalle, historial y acciones de incidencias.
 - `parts/ClientesPart.java`: buscador y ficha del cliente.
 - `parts/Avatar.java`: silueta de persona o edificio dibujada con código (GC).
-- `LifeCycle.java` y `LoginDialog.java`: login al arrancar, antes de abrir la ventana.
+- `login/InicioSesion.java` y `login/LoginDialog.java`: login al arrancar, antes de abrir la
+  ventana. `LoginDialog` solo pide los datos; `InicioSesion` los valida contra el backend.
 - `api/Sesion.java`: usuario, token y rol en memoria.
 - `api/BancoApi.java`: llamadas HTTP, cabecera `Bearer` y conversión de JSON.
 - `api/*Vista.java`: datos recibidos por la interfaz.
