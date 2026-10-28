@@ -2,6 +2,7 @@ package banco.web;
 
 import banco.service.BancoService;
 import banco.dto.CuentaRespuesta;
+import banco.dto.ResumenOperativo;
 import banco.dto.SolicitudTransferencia;
 import banco.dto.SolicitudResolucion;
 import banco.model.Transferencia;
@@ -30,6 +31,11 @@ public class BancoController {
     @GetMapping("/cuentas")
     public List<CuentaRespuesta> listarCuentas() {
         return banco.listarCuentas();
+    }
+
+    @GetMapping("/resumen")
+    public ResumenOperativo resumen() {
+        return banco.resumen();
     }
 
     @PostMapping("/transferencias")

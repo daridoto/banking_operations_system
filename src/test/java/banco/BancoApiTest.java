@@ -11,6 +11,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -27,6 +28,30 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class BancoApiTest {
     @Autowired
     private MockMvc api;
+    @Autowired
+    private JdbcTemplate jdbc;
+
+    @Test
+    void resumenDelDiaYLoQueRequiereAtencion() throws Exception {
+        api.perform(get("/api/resumen"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.transferenciasHoy").value(0))
+                .andExpect(jsonPath("$.importeHoyEur").value(0))
+                .andExpect(jsonPath("$.incidenciasPendientes").value(0))
+                .andExpect(jsonPath("$.cuentasBloqueadas").value(0));
+
+        // 60 EUR supera el umbral: cuenta como transferencia y genera una incidencia pendiente.
+        api.perform(post("/api/transferencias").contentType(MediaType.APPLICATION_JSON).content("""
+                {"ibanOrigen":"ES6099990001410000123456","ibanDestino":"ES2599990001450000234567","importe":60.00}
+                """)).andExpect(status().isOk());
+        jdbc.update("UPDATE cuentas SET estado = 'BLOQUEADA' WHERE iban = ?", DatosPrueba.IBAN_LUIS);
+
+        api.perform(get("/api/resumen"))
+                .andExpect(jsonPath("$.transferenciasHoy").value(1))
+                .andExpect(jsonPath("$.importeHoyEur").value(60))
+                .andExpect(jsonPath("$.incidenciasPendientes").value(1))
+                .andExpect(jsonPath("$.cuentasBloqueadas").value(1));
+    }
 
     @Test
     void consultaLasCuentasIniciales() throws Exception {
@@ -111,6 +136,7 @@ class BancoApiTest {
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].iban").value(DatosPrueba.IBAN_ANA))
                 .andExpect(jsonPath("$[0].titular").value("Ana García López"))
+                .andExpect(jsonPath("$[0].estado").value("ACTIVA"))
                 .andExpect(jsonPath("$[0].saldo").value(100))
                 .andExpect(jsonPath("$[1].iban").value(DatosPrueba.IBAN_LUIS))
                 .andExpect(jsonPath("$[1].saldo").value(50));

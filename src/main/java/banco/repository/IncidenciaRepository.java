@@ -17,7 +17,22 @@ public class IncidenciaRepository {
             new Incidencia(fila.getLong("id"), fila.getLong("transferencia_id"),
                     fila.getString("regla"), fila.getString("motivo"),
                     fila.getString("prioridad"), fila.getString("estado"),
-                    fila.getObject("fecha", OffsetDateTime.class));
+                    fila.getObject("fecha", OffsetDateTime.class),
+                    fila.getBigDecimal("importe"), fila.getString("moneda"), fila.getString("ordenante"),
+                    fila.getString("beneficiario"), fila.getString("concepto"));
+
+    // La incidencia unida a su transferencia y a los clientes de las dos cuentas.
+    private static final String SELECT_INCIDENCIA = """
+            SELECT i.*, t.importe, t.moneda, t.concepto,
+                   COALESCE(co.razon_social, co.nombre || ' ' || co.apellidos) AS ordenante,
+                   COALESCE(cd.razon_social, cd.nombre || ' ' || cd.apellidos) AS beneficiario
+            FROM incidencias i
+            JOIN transferencias t ON t.id = i.transferencia_id
+            JOIN cuentas o ON o.id = t.cuenta_origen_id
+            JOIN clientes co ON co.id = o.cliente_id
+            JOIN cuentas d ON d.id = t.cuenta_destino_id
+            JOIN clientes cd ON cd.id = d.cliente_id
+            """;
 
     public IncidenciaRepository(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
@@ -31,11 +46,11 @@ public class IncidenciaRepository {
     }
 
     public List<Incidencia> listar() {
-        return jdbc.query("SELECT * FROM incidencias ORDER BY id", convertirFila);
+        return jdbc.query(SELECT_INCIDENCIA + "ORDER BY i.id", convertirFila);
     }
 
     public Incidencia buscar(long id) {
-        return jdbc.query("SELECT * FROM incidencias WHERE id = ?", convertirFila, id)
+        return jdbc.query(SELECT_INCIDENCIA + "WHERE i.id = ?", convertirFila, id)
                 .stream().findFirst()
                 .orElseThrow(() -> new NoSuchElementException("No existe la incidencia " + id + "."));
     }
@@ -47,13 +62,23 @@ public class IncidenciaRepository {
     }
 
     public List<CambioIncidencia> listarHistorial(long incidenciaId) {
-        return jdbc.query("SELECT * FROM cambios_incidencia WHERE incidencia_id = ? ORDER BY fecha, id",
+        // LEFT JOIN: los cambios anteriores a la auditoría (V2) no tienen usuario.
+        return jdbc.query("""
+                SELECT c.*, u.nombre_completo AS nombre_usuario
+                FROM cambios_incidencia c LEFT JOIN usuarios u ON u.username = c.usuario
+                WHERE c.incidencia_id = ? ORDER BY c.fecha, c.id
+                """,
                 (fila, numero) -> new CambioIncidencia(
                         fila.getLong("id"), fila.getLong("incidencia_id"),
                         fila.getString("estado_anterior"), fila.getString("estado_nuevo"),
                         fila.getObject("fecha", OffsetDateTime.class), fila.getString("comentario"),
-                        fila.getString("usuario")),
+                        fila.getString("usuario"), fila.getString("nombre_usuario")),
                 incidenciaId);
+    }
+
+    public long contarPorEstado(String estado) {
+        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM incidencias WHERE estado = ?", Long.class, estado);
+        return total == null ? 0 : total;
     }
 
     public void registrarInicioRevision(long id, String usuario) {

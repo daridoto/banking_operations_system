@@ -50,6 +50,16 @@ class AuthTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void meDevuelveUsuarioNombreYRol() throws Exception {
+        String token = login("empleado", "empleado123");
+        api.perform(get("/api/me").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.usuario").value("empleado"))
+                .andExpect(jsonPath("$.nombre").value("Elena Sánchez Ruiz"))
+                .andExpect(jsonPath("$.rol").value("EMPLEADO"));
+    }
+
     private String login(String usuario, String password) throws Exception {
         String respuesta = api.perform(post("/api/login").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"usuario\":\"" + usuario + "\",\"password\":\"" + password + "\"}"))

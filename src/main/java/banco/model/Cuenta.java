@@ -12,8 +12,9 @@ public class Cuenta {
     private final String titular;
     private BigDecimal saldo;
     private final Currency moneda;
+    private final String estado;
 
-    public Cuenta(long id, String iban, String titular, BigDecimal saldo, String moneda) {
+    public Cuenta(long id, String iban, String titular, BigDecimal saldo, String moneda, String estado) {
         if (id <= 0) {
             throw new IllegalArgumentException("El ID debe ser positivo.");
         }
@@ -32,6 +33,7 @@ public class Cuenta {
         this.titular = titular;
         this.saldo = saldo;
         this.moneda = Currency.getInstance(moneda);
+        this.estado = Objects.requireNonNull(estado, "El estado es obligatorio.");
     }
 
     public long getId() {
@@ -52,6 +54,11 @@ public class Cuenta {
 
     public Currency getMoneda() {
         return moneda;
+    }
+
+    // ACTIVA, BLOQUEADA o CANCELADA.
+    public String getEstado() {
+        return estado;
     }
 
     public void ingresar(BigDecimal importe) {

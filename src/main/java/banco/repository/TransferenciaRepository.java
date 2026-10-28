@@ -40,6 +40,18 @@ public class TransferenciaRepository {
         return id.longValue();
     }
 
+    // Actividad del día (según la fecha del servidor): número de transferencias y
+    // suma de importes en euros, para el resumen de la pestaña Cuentas.
+    public ResumenDia resumenDeHoy() {
+        return jdbc.queryForObject("""
+                SELECT COUNT(*) AS total, COALESCE(SUM(CASE WHEN moneda = 'EUR' THEN importe END), 0) AS importe
+                FROM transferencias WHERE CAST(fecha AS DATE) = CURRENT_DATE
+                """, (fila, n) -> new ResumenDia(fila.getLong("total"), fila.getBigDecimal("importe")));
+    }
+
+    public record ResumenDia(long transferencias, BigDecimal importeEur) {
+    }
+
     public List<Transferencia> listar() {
         // Los IDs internos se traducen a IBAN uniendo dos veces con cuentas.
         return jdbc.query("""

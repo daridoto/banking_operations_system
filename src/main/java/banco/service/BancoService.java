@@ -4,6 +4,7 @@ import banco.repository.CuentaRepository;
 import banco.repository.TransferenciaRepository;
 import banco.repository.IncidenciaRepository;
 import banco.dto.CuentaRespuesta;
+import banco.dto.ResumenOperativo;
 import banco.dto.SolicitudTransferencia;
 import banco.model.Cuenta;
 import banco.model.Transferencia;
@@ -38,6 +39,14 @@ public class BancoService {
     @Transactional(readOnly = true)
     public List<CuentaRespuesta> listarCuentas() {
         return cuentas.listar().stream().map(CuentaRespuesta::de).toList();
+    }
+
+    // Indicadores para el empleado: actividad de hoy y lo que requiere atención.
+    @Transactional(readOnly = true)
+    public ResumenOperativo resumen() {
+        var hoy = historial.resumenDeHoy();
+        return new ResumenOperativo(hoy.transferencias(), hoy.importeEur(),
+                incidencias.contarPorEstado("PENDIENTE"), cuentas.contarPorEstado("BLOQUEADA"));
     }
 
     @Transactional(readOnly = true)

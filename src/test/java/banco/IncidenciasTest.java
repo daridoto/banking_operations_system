@@ -55,7 +55,12 @@ class IncidenciasTest {
                 .andExpect(jsonPath("$[0].prioridad").value("MEDIA"))
                 .andExpect(jsonPath("$[0].motivo").value(
                         "Importe 60.00 EUR superior al umbral de 50.00 EUR. Requiere revisión."))
-                .andExpect(jsonPath("$[0].fecha").isNotEmpty());
+                .andExpect(jsonPath("$[0].fecha").isNotEmpty())
+                // Contexto de la transferencia para el revisor.
+                .andExpect(jsonPath("$[0].importe").value(60))
+                .andExpect(jsonPath("$[0].moneda").value("EUR"))
+                .andExpect(jsonPath("$[0].ordenante").value("Ana García López"))
+                .andExpect(jsonPath("$[0].beneficiario").value("Luis Martín Pérez"));
     }
 
     @ParameterizedTest
@@ -132,6 +137,10 @@ class IncidenciasTest {
         assertEquals("PENDIENTE", cambio.get("ESTADO_ANTERIOR"));
         assertEquals("EN_REVISION", cambio.get("ESTADO_NUEVO"));
         assertNotNull(cambio.get("FECHA"));
+        // El historial dice el nombre del empleado, no solo su usuario.
+        api.perform(get("/api/incidencias/{id}/historial", id))
+                .andExpect(jsonPath("$[0].usuario").value("empleado"))
+                .andExpect(jsonPath("$[0].nombreUsuario").value("Elena Sánchez Ruiz"));
 
         api.perform(post("/api/incidencias/{id}/revision", id))
                 .andExpect(status().isConflict());

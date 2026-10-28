@@ -16,8 +16,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ServicioTransferenciasTest {
     private final ServicioTransferencias servicio = new ServicioTransferencias();
-    private final Cuenta ana = new Cuenta(1L, IBAN_ANA, "Ana", new BigDecimal("100.00"), "EUR");
-    private final Cuenta luis = new Cuenta(2L, IBAN_LUIS, "Luis", new BigDecimal("50.00"), "EUR");
+    private final Cuenta ana = new Cuenta(1L, IBAN_ANA, "Ana", new BigDecimal("100.00"), "EUR", "ACTIVA");
+    private final Cuenta luis = new Cuenta(2L, IBAN_LUIS, "Luis", new BigDecimal("50.00"), "EUR", "ACTIVA");
 
     @Test
     void transfiereDineroEntreDosCuentas() {
@@ -65,7 +65,7 @@ class ServicioTransferenciasTest {
 
     @Test
     void rechazaMonedasDistintasSinCambiarSaldos() {
-        Cuenta dolares = new Cuenta(3L, "DE89370400440532013000", "Eva", new BigDecimal("50.00"), "USD");
+        Cuenta dolares = new Cuenta(3L, "DE89370400440532013000", "Eva", new BigDecimal("50.00"), "USD", "ACTIVA");
 
         assertThrows(IllegalArgumentException.class,
                 () -> servicio.transferir(ana, dolares, new BigDecimal("20.00")));

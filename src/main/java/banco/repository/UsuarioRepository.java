@@ -12,7 +12,7 @@ public class UsuarioRepository {
     private final JdbcTemplate jdbc;
     private final RowMapper<Usuario> convertirFila = (fila, numero) ->
             new Usuario(fila.getString("username"), fila.getString("password_hash"),
-                    fila.getString("rol"), fila.getBoolean("activo"));
+                    fila.getString("nombre_completo"), fila.getString("rol"), fila.getBoolean("activo"));
 
     public UsuarioRepository(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
