@@ -1,7 +1,7 @@
 # Cliente de escritorio RCP
 
-Herramienta didáctica para consultar cuentas, generar transferencias de prueba y
-gestionar incidencias. Consume la API del backend en `http://localhost:8080`.
+Herramienta para empleados del banco: cuentas, transferencias por IBAN, gestión
+de incidencias y ficha de cliente. Consume la API del backend en `http://localhost:8080`.
 No accede directamente a H2.
 
 ## Inicio de sesión
@@ -28,16 +28,21 @@ reiniciar el cliente.
 
 ## Probar el flujo
 
-1. En **Cuentas**, pulsa **Actualizar cuentas**. Una transferencia válida de más
-   de 50 EUR genera una incidencia; comprueba antes que el origen tenga saldo.
+1. En **Cuentas**, pulsa **Actualizar cuentas**. Elige la cuenta de origen e indica
+   el IBAN de destino (de la lista, con su titular, o escrito a mano) y un concepto
+   opcional. Una transferencia de más de 50 EUR genera una incidencia.
 2. En **Incidencias**, pulsa **Actualizar incidencias** y selecciona la nueva fila.
 3. **Iniciar revisión** solo se habilita para una incidencia pendiente.
 4. **Resolver…** solo se habilita en revisión y para un supervisor, y exige comentario de 1 a 1000
    caracteres, no solo espacios. Cancelar el cuadro no envía ninguna petición.
 5. Tras guardar, se actualizan el estado de la fila, el detalle y el historial.
    Una incidencia resuelta no permite ninguna de esas dos acciones.
-6. El historial muestra los comentarios cuando existen; no añade una línea vacía
-   para cambios sin comentario.
+6. El historial muestra los comentarios cuando existen y qué empleado hizo cada
+   cambio ("· por supervisor").
+7. En **Clientes**, busca por nombre, razón social o documento (la búsqueda se lanza
+   al dejar de escribir). Al seleccionar un cliente se abre su ficha: avatar de
+   persona o empresa, documento, estado, saldo total, cuentas, últimos movimientos
+   (salidas en rojo, entradas en verde) e incidencias.
 
 Las peticiones se realizan en segundo plano. Durante los cambios se bloquean los
 controles para evitar envíos duplicados. Si el resultado es incierto, se consulta
@@ -48,6 +53,8 @@ transacciones definitivas siguen en el backend.
 
 - `parts/SamplePart.java`: cuentas y formulario de transferencias.
 - `parts/IncidenciasPart.java`: lista, detalle, historial y acciones de incidencias.
+- `parts/ClientesPart.java`: buscador y ficha del cliente.
+- `parts/Avatar.java`: silueta de persona o edificio dibujada con código (GC).
 - `LifeCycle.java` y `LoginDialog.java`: login al arrancar, antes de abrir la ventana.
 - `api/Sesion.java`: usuario, token y rol en memoria.
 - `api/BancoApi.java`: llamadas HTTP, cabecera `Bearer` y conversión de JSON.
